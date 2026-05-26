@@ -65,7 +65,7 @@ export default function AdminDashboard() {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const es = new EventSource('http://localhost:3001/metrics/stream');
+    const es = new EventSource('http://localhost:3000/metrics/stream');
 
     es.onmessage = (event) => {
       try {
