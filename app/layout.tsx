@@ -29,6 +29,17 @@ export default function RootLayout({
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof window !== 'undefined') {
+                import('/app/lib/errorMonitoring.ts').then(module => {
+                  module.initializeErrorMonitoring();
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

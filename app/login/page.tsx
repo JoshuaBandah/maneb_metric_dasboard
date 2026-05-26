@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateEmail, validatePassword, validateLoginForm, isFormValid as checkFormValid } from '../lib/validators';
+import { apiClient } from '../lib/api';
+import { captureError } from '../lib/errorMonitoring';
 import styles from './styles/login.module.css';
 
 export default function LoginPage() {
@@ -47,20 +49,27 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // TODO: Implement actual login API call
-      // const response = await fetch('/api/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // if (!response.ok) throw new Error('Login failed');
-      // const { token } = await response.json();
-      // Store token in httpOnly cookie
+      // Use the centralized API client for login
+      const response = await apiClient.login(email, password);
       
-      console.log('Login attempt:', { email, password });
+      // Store token in localStorage (TODO: use httpOnly cookie instead)
+      localStorage.setItem('auth_token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      console.log('Login successful:', response.user.email);
+      
+      // Redirect to admin dashboard
       router.push('/adminDashBoard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(errorMessage);
+      
+      // Capture error for monitoring
+      captureError(
+        err instanceof Error ? err : new Error(errorMessage),
+        { action: 'login', email }
+      );
+      
       setLoading(false);
     }
   };

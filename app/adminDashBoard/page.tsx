@@ -68,7 +68,14 @@ export default function AdminDashboard() {
 
   const metrics = streamMetrics || DEFAULT_METRICS;
 
-  const k6 = metrics.clientSideRequest || {};
+  const k6 = metrics.clientSideRequest || {
+    total_vus: 0,
+    success_vus: 0,
+    failed_vus: 0,
+    success_rate: 0,
+    avg_wait_time_ms: 0,
+    updatedAt: null,
+  };
 
   const trendChartData = {
     labels: history.map((h) => h.timestamp.toLocaleTimeString()),
@@ -112,7 +119,7 @@ export default function AdminDashboard() {
     labels: ['Success Requests', 'Failed Requests'],
     datasets: [
       {
-        data: [k6.success_vus, k6.failed_vus],
+        data: [k6?.success_vus || 0, k6?.failed_vus || 0],
         backgroundColor: ['#4caf50', '#f44336'],
         borderWidth: 1,
       },
@@ -124,7 +131,7 @@ export default function AdminDashboard() {
     datasets: [
       {
         label: 'Usage %',
-        data: [metrics.cpu.usagePercent, metrics.memory.usagePercent],
+        data: [metrics.cpu?.usagePercent || 0, metrics.memory?.usagePercent || 0],
         backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)'],
         borderWidth: 2,
       },
@@ -147,17 +154,17 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className={`${styles.alert} ${metrics.requests.errorRatePercent > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? styles.danger : styles.success}`}>
-        {metrics.requests.errorRatePercent > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? 'SYSTEM ALERT — High load detected' : 'System Healthy'}
+      <div className={`${styles.alert} ${(metrics.requests?.errorRatePercent || 0) > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? styles.danger : styles.success}`}>
+        {(metrics.requests?.errorRatePercent || 0) > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? 'SYSTEM ALERT — High load detected' : 'System Healthy'}
       </div>
 
       <div className={styles.grid}>
-        <Card title="CPU Usage" value={`${metrics.cpu.usagePercent.toFixed(1)}%`} />
-        <Card title="Memory Usage" value={`${metrics.memory.usagePercent.toFixed(1)}%`} />
-        <Card title="Avg Latency" value={`${metrics.latency.avgMs.toFixed(1)} ms`} />
-        <Card title="Requests" value={metrics.requests.total} />
-        <Card title="Failed Requests" value={metrics.requests.failed} />
-        <Card title="Error Rate" value={`${metrics.requests.errorRatePercent.toFixed(1)}%`} />
+        <Card title="CPU Usage" value={`${(metrics.cpu?.usagePercent || 0).toFixed(1)}%`} />
+        <Card title="Memory Usage" value={`${(metrics.memory?.usagePercent || 0).toFixed(1)}%`} />
+        <Card title="Avg Latency" value={`${(metrics.latency?.avgMs || 0).toFixed(1)} ms`} />
+        <Card title="Requests" value={metrics.requests?.total || 0} />
+        <Card title="Failed Requests" value={metrics.requests?.failed || 0} />
+        <Card title="Error Rate" value={`${(metrics.requests?.errorRatePercent || 0).toFixed(1)}%`} />
       </div>
 
       <div className={styles.grid}>
@@ -191,10 +198,10 @@ export default function AdminDashboard() {
             <Row label="Failed VUs" value={k6.failed_vus || 0} />
             <Row label="Success Rate" value={`${(k6.success_rate || 0).toFixed(1)}%`} />
             <Row label="Average Wait" value={`${(k6.avg_wait_time_ms || 0).toFixed(1)} ms`} />
-            <Row label="Event Loop Lag" value={`${metrics.latency.eventLoopLagMs.toFixed(2)} ms`} />
-            <Row label="P50 Latency" value={`${metrics.latency.p50Ms.toFixed(2)} ms`} />
-            <Row label="P90 Latency" value={`${metrics.latency.p90Ms.toFixed(2)} ms`} />
-            <Row label="P99 Latency" value={`${metrics.latency.p99Ms.toFixed(2)} ms`} />
+            <Row label="Event Loop Lag" value={`${(metrics.latency?.eventLoopLagMs || 0).toFixed(2)} ms`} />
+            <Row label="P50 Latency" value={`${(metrics.latency?.p50Ms || 0).toFixed(2)} ms`} />
+            <Row label="P90 Latency" value={`${(metrics.latency?.p90Ms || 0).toFixed(2)} ms`} />
+            <Row label="P99 Latency" value={`${(metrics.latency?.p99Ms || 0).toFixed(2)} ms`} />
             <Row label="Updated At" value={k6.updatedAt ? new Date(k6.updatedAt).toLocaleTimeString() : '-'} />
           </div>
         </div>
@@ -203,7 +210,7 @@ export default function AdminDashboard() {
   );
 }
 
-const Card = ({ title, value }) => {
+const Card = ({ title, value }: { title: string; value: string | number }) => {
   return (
     <div className={styles.card}>
       <p className={styles.cardTitle}>{title}</p>
@@ -212,7 +219,7 @@ const Card = ({ title, value }) => {
   );
 };
 
-const Row = ({ label, value }) => {
+const Row = ({ label, value }: { label: string; value: string | number }) => {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
       <span>{label}</span>
