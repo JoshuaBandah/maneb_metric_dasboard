@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,6 +13,7 @@ import {
   BarElement,
 } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
+import { useMetricsStream } from '../hooks/useMetricsStream';
 import styles from './style/dashBoard.module.css';
 
 ChartJS.register(
@@ -61,41 +61,14 @@ const DEFAULT_METRICS = {
 };
 
 export default function AdminDashboard() {
-  const [metrics, setMetrics] = useState(DEFAULT_METRICS);
-  const [history, setHistory] = useState([]);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+  const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
+    `${apiUrl}/metrics/stream`
+  );
 
-  useEffect(() => {
-    const es = new EventSource('http://localhost:3000/metrics/stream');
-
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setMetrics(data);
-        const k6 = data.clientSideRequest || {};
-        setHistory((prev) => {
-          const updated = [...prev, {
-            timestamp: new Date(),
-            latency: data.latency?.avgMs || 0,
-            cpu: data.cpu?.usagePercent || 0,
-            memory: data.memory?.usagePercent || 0,
-            requests: data.requests?.total || 0,
-            k6_total: k6.total_vus || 0,
-            k6_failed: k6.failed_vus || 0,
-            k6_success: k6.success_vus || 0,
-            k6_success_rate: k6.success_rate || 0,
-          }];
-          return updated.slice(-20);
-        });
-      } catch (err) {}
-    };
-
-    es.onerror = (err) => {};
-
-    return () => es.close();
-  }, []);
+  const metrics = streamMetrics || DEFAULT_METRICS;
 
   const k6 = metrics.clientSideRequest || {};
-  const isCritical = metrics.requests.errorRatePercent > 50 || k6.failed_vus > 100;
 
   const trendChartData = {
     labels: history.map((h) => h.timestamp.toLocaleTimeString()),
@@ -162,8 +135,20 @@ export default function AdminDashboard() {
     <div className={styles.container}>
       <h1 className={styles.title}>MANEB Monitoring Dashboard</h1>
 
-      <div className={`${styles.alert} ${isCritical ? styles.danger : styles.success}`}>
-        {isCritical ? 'SYSTEM ALERT — High load detected' : 'System Healthy'}
+      {loading && (
+        <div className={styles.alert} style={{ backgroundColor: '#2196F3', color: 'white' }}>
+          Loading metrics... Please wait.
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.alert} style={{ backgroundColor: '#ff9800', color: 'white' }}>
+          ⚠ Failed to connect to metrics stream
+        </div>
+      )}
+
+      <div className={`${styles.alert} ${metrics.requests.errorRatePercent > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? styles.danger : styles.success}`}>
+        {metrics.requests.errorRatePercent > 50 || (metrics.clientSideRequest?.failed_vus || 0) > 100 ? 'SYSTEM ALERT — High load detected' : 'System Healthy'}
       </div>
 
       <div className={styles.grid}>
