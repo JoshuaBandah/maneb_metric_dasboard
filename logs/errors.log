@@ -70,3 +70,261 @@
   Stack: Error: Max reconnection attempts reached
     at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:280:50)
 
+[2026-05-27T21:06:39.042Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:07:02.278Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:07:28.302Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:07:57.368Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:08:34.423Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:08:34.424Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:280:50)
+
+[2026-05-27T21:42:43.688Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:42:52.163Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:42:55.846Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:42:59.947Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:15.230Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:20.889Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:28.985Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:29.354Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:36.239Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:43.954Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:46.412Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:43:52.436Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:44:03.247Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:44:22.295Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T21:44:22.295Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:280:50)
+
+[2026-05-27T21:50:30.127Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:50:53.207Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:51:16.271Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:51:41.341Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:51:47.284Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:52:04.401Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:52:34.304Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:53:12.301Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:53:12.303Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:280:50)
+
+[2026-05-27T21:55:14.689Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:55:19.260Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:55:26.252Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:55:37.769Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:55:56.313Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:55:56.314Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:280:50)
+
+[2026-05-27T21:59:20.364Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v1/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v1/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:59:37.341Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:59:43.420Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T21:59:51.375Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T22:00:00.382Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T22:00:20.414Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:264:46)
+
+[2026-05-27T22:00:20.415Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/v3/dashboard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/api/v3/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_00kea5c._.js:280:50)
+
