@@ -32,7 +32,11 @@ async function makeRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   try {
-    const response = await fetch(url, {
+    // Use backend URL from environment
+    const backendUrl = process.env.BACKEND_URL || 'http://10.10.20.52:3000';
+    const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
+
+    const response = await fetch(fullUrl, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -41,7 +45,7 @@ async function makeRequest<T>(
     });
 
     // Log the request
-    console.log(`[API] ${options.method || 'GET'} ${url} - ${response.status}`);
+    console.log(`[API] ${options.method || 'GET'} ${fullUrl} - ${response.status}`);
 
     if (!response.ok) {
       const error: ApiError = new Error(`API Error: ${response.statusText}`);
@@ -50,7 +54,7 @@ async function makeRequest<T>(
       
       // Capture error for monitoring
       captureError(error, {
-        url,
+        url: fullUrl,
         method: options.method || 'GET',
         status: response.status,
       });

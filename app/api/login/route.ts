@@ -1,13 +1,9 @@
 /**
  * API Route: POST /api/login
- * Handles user authentication
+ * Handles user authentication by forwarding to backend server
  * 
- * This is a placeholder implementation
- * In production, you would:
- * 1. Validate credentials against a database
- * 2. Generate a JWT token
- * 3. Set an httpOnly cookie with the token
- * 4. Return user information
+ * This route acts as a proxy to the real backend at http://10.10.20.52:3000
+ * The backend validates credentials and returns user info + token
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,46 +23,8 @@ interface LoginResponse {
 }
 
 /**
- * Validate credentials (placeholder)
- * TODO: Replace with actual database validation
- */
-function validateCredentials(email: string, password: string): boolean {
-  // This is a placeholder - in production, validate against your database
-  // For now, accept any email/password combination for testing
-  
-  // Example: Only allow specific test credentials
-  const testCredentials = [
-    { email: 'admin@maneb.com', password: 'password123' },
-    { email: 'test@example.com', password: 'test123456' },
-  ];
-
-  return testCredentials.some(
-    cred => cred.email === email && cred.password === password
-  );
-}
-
-/**
- * Generate JWT token (placeholder)
- * TODO: Replace with actual JWT generation
- */
-function generateToken(email: string): string {
-  // This is a placeholder - in production, use a proper JWT library
-  // For now, return a simple token
-  const payload = {
-    email,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 86400, // 24 hours
-  };
-
-  // In production: use jsonwebtoken library
-  // return jwt.sign(payload, process.env.JWT_SECRET);
-  
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
-}
-
-/**
  * POST /api/login
- * Authenticate user and return token
+ * Forward login request to backend server
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -80,44 +38,71 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Validate credentials
-    if (!validateCredentials(body.email, body.password)) {
-      console.warn(`[Login] Failed login attempt for email: ${body.email}`);
+    console.log(`[Login] Forwarding login request for email: ${body.email}`);
+
+    // Forward request to backend server
+    const backendUrl = 'http://10.10.20.52:3000/login';
+    
+    const backendResponse = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: body.email,
+        password: body.password,
+      }),
+    });
+
+    // Check if backend response is ok
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json().catch(() => ({}));
+      console.warn(`[Login] Backend rejected login for email: ${body.email}`, errorData);
+      
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
+        { error: errorData.error || 'Invalid email or password' },
+        { status: backendResponse.status }
       );
     }
 
-    // Generate token
-    const token = generateToken(body.email);
+    // Parse backend response
+    const backendData = await backendResponse.json();
 
-    // Create response
+    console.log(`[Login] Successful login for email: ${body.email}`);
+
+    // Create response with backend data
     const response = NextResponse.json(
       {
-        token,
+        token: backendData.token,
         user: {
-          id: '1', // TODO: Get from database
-          email: body.email,
-          name: 'User', // TODO: Get from database
+          id: backendData.user?.id || backendData.userId || '1',
+          email: backendData.user?.email || body.email,
+          name: backendData.user?.name || backendData.userName || 'User',
         },
       } as LoginResponse,
       { status: 200 }
     );
 
-    // Set httpOnly cookie (more secure than localStorage)
-    response.cookies.set('auth_token', token, {
+    // Set httpOnly cookie with token from backend
+    response.cookies.set('auth_token', backendData.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 86400, // 24 hours
     });
 
-    console.log(`[Login] Successful login for email: ${body.email}`);
-
     return response;
   } catch (error) {
     console.error('[Login] Error:', error);
+    
+    // Check if it's a network error (backend not reachable)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return NextResponse.json(
+        { error: 'Backend server is not reachable. Please try again later.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Login failed. Please try again.' },
       { status: 500 }
