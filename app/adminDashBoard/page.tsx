@@ -171,7 +171,7 @@ export default function AdminDashboard() {
         <Card title="K6 Total VUs" value={k6.total_vus || 0} />
         <Card title="K6 Success VUs" value={k6.success_vus || 0} />
         <Card title="K6 Failed VUs" value={k6.failed_vus || 0} />
-        <Card title="K6 Failure Rate" value={`${(100 - k6.success_rate || 0).toFixed(1)}%`} />
+        <Card title="K6 Failure Rate" value={k6.total_vus === 0 ? 'N/A' : `${(100 - k6.success_rate || 0).toFixed(1)}%`} />
       </div>
 
       <div className={styles.chartsGrid}>
