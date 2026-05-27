@@ -25,7 +25,16 @@ interface ErrorReport {
  */
 function logErrorToFile(report: ErrorReport): void {
   try {
+    const { mkdirSync } = require('fs');
     const logsDir = join(process.cwd(), 'logs');
+    
+    // Create logs directory if it doesn't exist
+    try {
+      mkdirSync(logsDir, { recursive: true });
+    } catch (err) {
+      // Directory might already exist
+    }
+    
     const logFile = join(logsDir, 'errors.log');
     
     const logEntry = `[${report.timestamp}] ${report.severity.toUpperCase()}: ${report.message}\n`;

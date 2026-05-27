@@ -61,7 +61,7 @@ const DEFAULT_METRICS = {
 };
 
 export default function AdminDashboard() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://10.10.20.52:3000';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
     `${apiUrl}/metrics/stream`
   );

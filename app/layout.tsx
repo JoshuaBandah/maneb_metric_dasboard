@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ErrorMonitoringInit } from "./components/ErrorMonitoringInit";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,17 +30,7 @@ export default function RootLayout({
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if (typeof window !== 'undefined') {
-                import('/app/lib/errorMonitoring.ts').then(module => {
-                  module.initializeErrorMonitoring();
-                });
-              }
-            `,
-          }}
-        />
+        <ErrorMonitoringInit />
       </body>
     </html>
   );

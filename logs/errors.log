@@ -1,0 +1,72 @@
+[2026-05-27T20:31:31.426Z] MEDIUM: Failed to fetch
+  URL: http://localhost:3000/login
+  Context: {"url":"/api/login","method":"POST"}
+  Stack: TypeError: Failed to fetch
+    at makeRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:70:32)
+    at http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:125:33
+    at retryRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:110:26)
+    at Object.login (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:125:16)
+    at handleSubmit (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:318:166)
+    at executeDispatch (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10329:13)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at processDispatchQueue (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10355:41)
+    at http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10633:13
+    at batchedUpdates$1 (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:2253:44)
+    at dispatchEventForPluginEventSystem (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10431:9)
+    at dispatchEvent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:13002:37)
+    at dispatchDiscreteEvent (http://localhost:3000/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:12984:64)
+
+[2026-05-27T20:31:54.271Z] MEDIUM: Failed to fetch
+  URL: http://localhost:3000/login
+  Context: {"url":"/api/login","method":"POST"}
+  Stack: TypeError: Failed to fetch
+    at makeRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:70:32)
+    at http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:125:33
+    at retryRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:110:26)
+    at async handleSubmit (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:318:30)
+
+[2026-05-27T20:31:54.272Z] MEDIUM: Failed to fetch
+  URL: http://localhost:3000/login
+  Context: {"action":"login","email":"admin@maneb.com"}
+  Stack: TypeError: Failed to fetch
+    at makeRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:70:32)
+    at http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:125:33
+    at retryRequest (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:110:26)
+    at async handleSubmit (http://localhost:3000/_next/static/chunks/_0.~zkgu._.js:318:30)
+
+[2026-05-27T20:34:39.118Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T20:35:02.188Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T20:35:27.284Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T20:35:57.283Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T20:36:35.283Z] HIGH: EventSource connection error
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream"}
+  Stack: Error: EventSource connection error
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:264:46)
+
+[2026-05-27T20:36:35.285Z] HIGH: Max reconnection attempts reached
+  URL: http://localhost:3000/adminDashBoard
+  Context: {"feature":"useMetricsStream","url":"http://10.10.20.52:3000/metrics/stream","attempts":5}
+  Stack: Error: Max reconnection attempts reached
+    at useMetricsStream.useEffect.connect (http://localhost:3000/_next/static/chunks/app_0egs1cf._.js:280:50)
+
