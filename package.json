@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cdn": "node cdn-server/server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
     "chart.js": "^4.5.1",
     "next": "16.2.3",
     "react": "19.2.4",

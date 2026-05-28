@@ -1,14 +1,13 @@
 /**
  * V3 Architecture Types
- * CDN-based edge distribution approach
+ * CDN-based edge distribution approach for MANEB JCE results
  */
 
 export interface V3Student {
-  regNumber: string;
-  dob: string;
+  regNumber: string; // e.g. J0282/098
+  dob: string;       // e.g. 1990-05-15
   name: string;
   subjects: V3Subject[];
-  link: string; // Pre-generated link to student result
 }
 
 export interface V3Subject {
@@ -17,18 +16,27 @@ export interface V3Subject {
   marks?: number;
 }
 
+/**
+ * School file stored on R2 CDN
+ * Named by centre number: 0282.json
+ */
 export interface V3SchoolFile {
-  school: string;
-  uploadedAt: string;
+  centre: string;        // e.g. "0282"
+  school: string;        // e.g. "Zomba Secondary"
+  exam: string;          // e.g. "JCE 2024"
+  publishedAt: string;   // ISO timestamp
   totalStudents: number;
   students: V3Student[];
-  index: Record<string, number>; // Maps "regNumber_dob" to array index
+  /**
+   * index maps "J0282/098_1990-05-15" → array position in students[]
+   * Enables O(1) lookup without looping
+   */
+  index: Record<string, number>;
 }
 
 export interface V3SearchRequest {
-  regNumber: string;
-  dob: string;
-  school: string;
+  examNumber: string; // e.g. J0282/098
+  dob: string;        // e.g. 1990-05-15
 }
 
 export interface V3SearchResponse {
@@ -40,8 +48,19 @@ export interface V3SearchResponse {
 }
 
 export interface V3UploadRequest {
-  school: string;
   file: File;
+  examYear: string; // e.g. "2024"
+  schoolName: string;
+}
+
+export interface V3UploadResult {
+  success: boolean;
+  centre: string;
+  school: string;
+  totalStudents: number;
+  r2Key: string;       // path in R2 bucket e.g. jce/2024/0282.json
+  publicUrl: string;   // Cloudflare public URL
+  uploadedAt: string;
 }
 
 export interface V3Metrics {
@@ -49,9 +68,17 @@ export interface V3Metrics {
   cdnRequests: number;
   cdnCacheHitRate: number;
   cdnResponseTime: number;
-  frontendSearchTime: number;
   totalRequests: number;
   successRequests: number;
   failedRequests: number;
-  backendHits: number; // Should be 0 or minimal
+  uploads: V3UploadRecord[];
+}
+
+export interface V3UploadRecord {
+  centre: string;
+  school: string;
+  examYear: string;
+  totalStudents: number;
+  uploadedAt: string;
+  publicUrl: string;
 }

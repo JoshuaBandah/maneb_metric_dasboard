@@ -64,10 +64,33 @@ const DEFAULT_METRICS = {
 
 type TabType = 'metrics' | 'upload';
 
+interface UploadRecord {
+  centre: string;
+  school: string;
+  examYear: string;
+  totalStudents: number;
+  uploadedAt: string;
+  publicUrl: string;
+}
+
+interface UploadResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  centre?: string;
+  school?: string;
+  examYear?: string;
+  totalStudents?: number;
+  publicUrl?: string;
+  parseErrors?: string[];
+}
+
 export default function V3Dashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('metrics');
   const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const metricsEndpoint = `${apiUrl}/api/v3/metrics/stream`;
@@ -75,6 +98,25 @@ export default function V3Dashboard() {
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
     metricsEndpoint
   );
+
+  // Load upload history from V3 metrics endpoint
+  const loadUploadHistory = async () => {
+    try {
+      const res = await fetch('/v3/api/metrics');
+      if (res.ok) {
+        const data = await res.json();
+        setUploadHistory(data.uploads || []);
+      }
+    } catch {
+      // silently fail — history is non-critical
+    }
+  };
+
+  // Load history when upload tab is opened
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    if (tab === 'upload') loadUploadHistory();
+  };
 
   const metrics = streamMetrics || DEFAULT_METRICS;
 
@@ -91,35 +133,45 @@ export default function V3Dashboard() {
     e.preventDefault();
     setIsUploading(true);
     setUploadStatus('');
+    setUploadResult(null);
 
     const formData = new FormData(e.currentTarget);
-    const school = formData.get('school') as string;
+    const schoolName = formData.get('schoolName') as string;
+    const examYear = formData.get('examYear') as string;
     const file = formData.get('file') as File;
 
-    if (!school || !file) {
-      setUploadStatus('Please select a school and file');
+    if (!schoolName || !examYear || !file) {
+      setUploadStatus('Please fill in all fields');
       setIsUploading(false);
       return;
     }
 
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append('school', school);
+      uploadFormData.append('schoolName', schoolName);
+      uploadFormData.append('examYear', examYear);
       uploadFormData.append('file', file);
 
-      const response = await fetch(`${apiUrl}/api/v3/upload`, {
+      const response = await fetch('/v3/api/upload', {
         method: 'POST',
         body: uploadFormData,
       });
 
-      if (response.ok) {
-        setUploadStatus('✓ CSV uploaded successfully and indexed for CDN');
+      const data: UploadResult = await response.json();
+
+      if (response.ok && data.success) {
+        setUploadResult(data);
+        setUploadStatus('success');
         (e.target as HTMLFormElement).reset();
+        // Refresh history
+        loadUploadHistory();
       } else {
-        setUploadStatus('✗ Upload failed. Please try again.');
+        setUploadResult(data);
+        setUploadStatus('error');
       }
     } catch (error) {
-      setUploadStatus(`✗ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setUploadResult({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+      setUploadStatus('error');
     } finally {
       setIsUploading(false);
     }
@@ -204,13 +256,13 @@ export default function V3Dashboard() {
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeTab === 'metrics' ? styles.active : ''}`}
-            onClick={() => setActiveTab('metrics')}
+            onClick={() => handleTabChange('metrics')}
           >
             📊 Metrics & Performance
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'upload' ? styles.active : ''}`}
-            onClick={() => setActiveTab('upload')}
+            onClick={() => handleTabChange('upload')}
           >
             📤 Upload Results
           </button>
@@ -318,22 +370,38 @@ export default function V3Dashboard() {
             <div className={styles.uploadContainer}>
               <div className={styles.uploadCard}>
                 <h2>Upload School Results CSV</h2>
-                <p>Upload a CSV file containing student results for a school. The system will:</p>
+                <p>
+                  Upload a CSV file for a school. The centre number is extracted automatically
+                  from the exam numbers in the file — no need to type it manually.
+                </p>
                 <ul>
-                  <li>Parse the CSV file</li>
-                  <li>Generate an index for fast lookup</li>
-                  <li>Create links for each student result</li>
-                  <li>Upload to CDN for global distribution</li>
+                  <li>CSV is parsed and validated</li>
+                  <li>Index is generated for O(1) student lookup</li>
+                  <li>File is uploaded to Cloudflare R2 as <code>jce/&#123;year&#125;/&#123;centre&#125;.json</code></li>
+                  <li>Students can access results immediately via CDN</li>
                 </ul>
 
                 <form onSubmit={handleFileUpload} className={styles.uploadForm}>
                   <div className={styles.formGroup}>
-                    <label htmlFor="school">School Name *</label>
+                    <label htmlFor="schoolName">School Name *</label>
                     <input
                       type="text"
-                      id="school"
-                      name="school"
-                      placeholder="e.g., Zomba Secondary"
+                      id="schoolName"
+                      name="schoolName"
+                      placeholder="e.g., Zomba Secondary School"
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label htmlFor="examYear">Exam Year *</label>
+                    <input
+                      type="text"
+                      id="examYear"
+                      name="examYear"
+                      placeholder="e.g., 2024"
+                      pattern="\d{4}"
+                      maxLength={4}
                       required
                     />
                   </div>
@@ -347,33 +415,94 @@ export default function V3Dashboard() {
                       accept=".csv"
                       required
                     />
-                    <small>Format: regNumber, dob, name, subject1, grade1, subject2, grade2, ...</small>
+                    <small>
+                      Format: examNumber, dob (YYYY-MM-DD), name, subject1, grade1, subject2, grade2, ...
+                    </small>
                   </div>
 
                   <button type="submit" disabled={isUploading} className={styles.uploadButton}>
-                    {isUploading ? 'Uploading...' : '📤 Upload & Index'}
+                    {isUploading ? '⏳ Processing & Uploading...' : '📤 Upload to CDN'}
                   </button>
                 </form>
 
-                {uploadStatus && (
-                  <div
-                    className={`${styles.statusMessage} ${
-                      uploadStatus.includes('✓') ? styles.success : styles.error
-                    }`}
-                  >
-                    {uploadStatus}
+                {/* Success result */}
+                {uploadStatus === 'success' && uploadResult && (
+                  <div className={`${styles.statusMessage} ${styles.success}`}>
+                    <strong>✓ Upload successful</strong>
+                    <div style={{ marginTop: 8, fontSize: 12 }}>
+                      <div>School: {uploadResult.school}</div>
+                      <div>Centre: {uploadResult.centre}</div>
+                      <div>Students: {uploadResult.totalStudents}</div>
+                      <div>
+                        CDN URL:{' '}
+                        <a href={uploadResult.publicUrl} target="_blank" rel="noreferrer" style={{ color: '#2e7d32' }}>
+                          {uploadResult.publicUrl}
+                        </a>
+                      </div>
+                      {uploadResult.parseErrors && uploadResult.parseErrors.length > 0 && (
+                        <div style={{ marginTop: 6, color: '#e65100' }}>
+                          ⚠ {uploadResult.parseErrors.length} row(s) skipped — check CSV format
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Error result */}
+                {uploadStatus === 'error' && uploadResult && (
+                  <div className={`${styles.statusMessage} ${styles.error}`}>
+                    <strong>✗ Upload failed</strong>
+                    <div style={{ marginTop: 4, fontSize: 12 }}>{uploadResult.error}</div>
                   </div>
                 )}
               </div>
 
               <div className={styles.uploadCard}>
-                <h3>CSV Format Example</h3>
+                <h3>CSV Format</h3>
                 <pre className={styles.codeBlock}>
-{`regNumber,dob,name,subject1,grade1,subject2,grade2
-MW1001,1990-05-15,John Banda,Math,A,English,B
-MW1002,1991-03-20,Mary Phiri,Math,B,English,A
-MW1003,1989-12-10,Peter Mwale,Math,C,English,B`}
+{`examNumber,dob,name,subject1,grade1,subject2,grade2
+J0282/098,1990-05-15,John Banda,Mathematics,A,English,B
+J0282/099,1991-03-20,Mary Phiri,Mathematics,B,English,A
+J0282/100,1989-12-10,Peter Mwale,Mathematics,C,Biology,B`}
                 </pre>
+                <p style={{ marginTop: 12, fontSize: 12, color: '#666' }}>
+                  <strong>Exam number format:</strong> J&#123;CENTRE&#125;/&#123;CANDIDATE&#125;<br />
+                  The centre number (e.g. <code>0282</code>) is extracted automatically.<br />
+                  All rows in one CSV must belong to the same centre.
+                </p>
+
+                {/* Upload history */}
+                {uploadHistory.length > 0 && (
+                  <>
+                    <h3 style={{ marginTop: 20 }}>Upload History</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: '#f0f8fb' }}>
+                            <th style={thStyle}>Centre</th>
+                            <th style={thStyle}>School</th>
+                            <th style={thStyle}>Year</th>
+                            <th style={thStyle}>Students</th>
+                            <th style={thStyle}>Uploaded</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {uploadHistory
+                            .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+                            .map((rec, i) => (
+                              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={tdStyle}>{rec.centre}</td>
+                                <td style={tdStyle}>{rec.school}</td>
+                                <td style={tdStyle}>{rec.examYear}</td>
+                                <td style={tdStyle}>{rec.totalStudents}</td>
+                                <td style={tdStyle}>{new Date(rec.uploadedAt).toLocaleString()}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -382,6 +511,19 @@ MW1003,1989-12-10,Peter Mwale,Math,C,English,B`}
     </div>
   );
 }
+
+const thStyle: React.CSSProperties = {
+  padding: '6px 8px',
+  textAlign: 'left',
+  fontWeight: 600,
+  color: '#45B7D1',
+  borderBottom: '2px solid #e0e0e0',
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '6px 8px',
+  color: '#333',
+};
 
 const Card = ({ title, value }: { title: string; value: string | number }) => {
   return (
