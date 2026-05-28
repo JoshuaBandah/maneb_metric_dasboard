@@ -78,6 +78,7 @@ export interface V3UploadRecord {
   centre: string;
   school: string;
   examYear: string;
+  examType: 'JCE' | 'MSCE' | 'PLSCE';
   totalStudents: number;
   uploadedAt: string;
   publicUrl: string;

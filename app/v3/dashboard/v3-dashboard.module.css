@@ -243,6 +243,22 @@
   border-color: #45B7D1;
 }
 
+.select {
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  width: 100%;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #45B7D1;
+}
+
 .formGroup small {
   font-size: 11px;
   color: #999;

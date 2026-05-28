@@ -33,7 +33,7 @@ async function makeRequest<T>(
 ): Promise<T> {
   try {
     // Use backend URL from environment
-    const backendUrl = process.env.BACKEND_URL || 'http://10.10.20.52:3000';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
     const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
 
     const response = await fetch(fullUrl, {

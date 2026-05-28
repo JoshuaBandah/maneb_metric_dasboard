@@ -41,7 +41,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log(`[Login] Forwarding login request for email: ${body.email}`);
 
     // Forward request to backend server
-    const backendUrl = 'http://10.10.20.52:3000/login';
+    const backendUrl = process.env.BACKEND_URL
+      ? `${process.env.BACKEND_URL}/login`
+      : 'http://localhost:3000/login';
     
     const backendResponse = await fetch(backendUrl, {
       method: 'POST',

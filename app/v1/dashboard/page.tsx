@@ -63,8 +63,8 @@ const DEFAULT_METRICS = {
 };
 
 export default function V1Dashboard() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const metricsEndpoint = `${apiUrl}/api/v1/metrics/stream`;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const metricsEndpoint = `${apiUrl}/v1/api/metrics/stream`;
 
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
     metricsEndpoint
@@ -149,7 +149,11 @@ export default function V1Dashboard() {
           <h1 className={styles.title}>V1: Traditional Architecture</h1>
           <p className={styles.subtitle}>Backend-First Approach - Direct Database Queries</p>
         </div>
-        <Link href="/v3/dashboard" className={styles.switchButton}>
+        <Link
+          href="/v3/dashboard"
+          className={styles.switchButton}
+          onClick={() => localStorage.setItem('maneb_portal_version', 'v3')}
+        >
           Switch to V3 (CDN)
         </Link>
       </div>

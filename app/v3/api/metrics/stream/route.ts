@@ -13,20 +13,11 @@
 
 import { NextRequest } from 'next/server';
 
-const VPS_METRICS_URL = process.env.VPS_METRICS_URL || 'http://10.10.20.52:3001';
 const CDN_SERVER_URL  = process.env.CDN_SERVER_URL  || 'http://localhost:4000';
 const STREAM_INTERVAL_MS = 2000;
 
 async function fetchVPSMetrics() {
-  try {
-    const res = await fetch(`${VPS_METRICS_URL}/v3/metrics`, {
-      signal: AbortSignal.timeout(1500),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
+  return null; // V3 does not use VPS metrics
 }
 
 async function fetchCDNStats() {

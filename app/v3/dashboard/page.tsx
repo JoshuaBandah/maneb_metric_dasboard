@@ -64,36 +64,42 @@ const DEFAULT_METRICS = {
 
 type TabType = 'metrics' | 'upload';
 
+type ExamType = 'JCE' | 'MSCE' | 'PLSCE';
+
 interface UploadRecord {
   centre: string;
   school: string;
   examYear: string;
+  examType: string;
   totalStudents: number;
   uploadedAt: string;
   publicUrl: string;
 }
 
-interface UploadResult {
+interface PublishResult {
   success: boolean;
   message?: string;
   error?: string;
-  centre?: string;
-  school?: string;
+  hint?: string;
+  examType?: string;
   examYear?: string;
+  totalSchools?: number;
   totalStudents?: number;
-  publicUrl?: string;
-  parseErrors?: string[];
+  schools?: { centre: string; school: string; totalStudents: number; publicUrl: string }[];
+  failures?: { school: string; error: string }[];
+  mockMode?: boolean;
 }
 
 export default function V3Dashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>('metrics');
-  const [uploadStatus, setUploadStatus] = useState<string>('');
-  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [activeTab, setActiveTab]         = useState<TabType>('metrics');
+  const [examType, setExamType]           = useState<ExamType>('JCE');
+  const [examYear, setExamYear]           = useState('2024');
+  const [isPublishing, setIsPublishing]   = useState(false);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-  const metricsEndpoint = `${apiUrl}/api/v3/metrics/stream`;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const metricsEndpoint = `${apiUrl}/v3/api/metrics/stream`;
 
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
     metricsEndpoint
@@ -129,51 +135,28 @@ export default function V3Dashboard() {
     updatedAt: null,
   };
 
-  const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePublish = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsUploading(true);
-    setUploadStatus('');
-    setUploadResult(null);
-
-    const formData = new FormData(e.currentTarget);
-    const schoolName = formData.get('schoolName') as string;
-    const examYear = formData.get('examYear') as string;
-    const file = formData.get('file') as File;
-
-    if (!schoolName || !examYear || !file) {
-      setUploadStatus('Please fill in all fields');
-      setIsUploading(false);
-      return;
-    }
+    setIsPublishing(true);
+    setPublishResult(null);
 
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('schoolName', schoolName);
-      uploadFormData.append('examYear', examYear);
-      uploadFormData.append('file', file);
-
-      const response = await fetch('/v3/api/upload', {
+      const res = await fetch('/v3/api/publish', {
         method: 'POST',
-        body: uploadFormData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examType, examYear }),
       });
 
-      const data: UploadResult = await response.json();
-
-      if (response.ok && data.success) {
-        setUploadResult(data);
-        setUploadStatus('success');
-        (e.target as HTMLFormElement).reset();
-        // Refresh history
-        loadUploadHistory();
-      } else {
-        setUploadResult(data);
-        setUploadStatus('error');
-      }
-    } catch (error) {
-      setUploadResult({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
-      setUploadStatus('error');
+      const data: PublishResult = await res.json();
+      setPublishResult(data);
+      if (data.success) loadUploadHistory();
+    } catch (err) {
+      setPublishResult({
+        success: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
     } finally {
-      setIsUploading(false);
+      setIsPublishing(false);
     }
   };
 
@@ -245,7 +228,11 @@ export default function V3Dashboard() {
           <h1 className={styles.title}>V3: CDN Architecture</h1>
           <p className={styles.subtitle}>Edge-Based Distribution - Ultra-Fast Frontend Search</p>
         </div>
-        <Link href="/v1/dashboard" className={styles.switchButton}>
+        <Link
+          href="/v1/dashboard"
+          className={styles.switchButton}
+          onClick={() => localStorage.setItem('maneb_portal_version', 'v1')}
+        >
           Switch to V1 (Backend)
         </Link>
       </div>
@@ -368,142 +355,171 @@ export default function V3Dashboard() {
         {activeTab === 'upload' && (
           <div className={styles.tabContent}>
             <div className={styles.uploadContainer}>
+
+              {/* ── Publish form ── */}
               <div className={styles.uploadCard}>
-                <h2>Upload School Results CSV</h2>
+                <h2>Publish Results to CDN</h2>
                 <p>
-                  Upload a CSV file for a school. The centre number is extracted automatically
-                  from the exam numbers in the file — no need to type it manually.
+                  Select the exam type and year. The system will pull all results
+                  from the database, generate one indexed file per school, and
+                  push everything to the CDN. Students can then access results
+                  instantly — no database hit required.
                 </p>
                 <ul>
-                  <li>CSV is parsed and validated</li>
-                  <li>Index is generated for O(1) student lookup</li>
-                  <li>File is uploaded to Cloudflare R2 as <code>jce/&#123;year&#125;/&#123;centre&#125;.json</code></li>
-                  <li>Students can access results immediately via CDN</li>
+                  <li>Results fetched from VPS database</li>
+                  <li>Grouped by school/centre automatically</li>
+                  <li>One indexed JSON file generated per school</li>
+                  <li>All files pushed to CDN simultaneously</li>
+                  <li>Students access CDN directly — zero backend load</li>
                 </ul>
 
-                <form onSubmit={handleFileUpload} className={styles.uploadForm}>
+                <form onSubmit={handlePublish} className={styles.uploadForm}>
                   <div className={styles.formGroup}>
-                    <label htmlFor="schoolName">School Name *</label>
-                    <input
-                      type="text"
-                      id="schoolName"
-                      name="schoolName"
-                      placeholder="e.g., Zomba Secondary School"
+                    <label htmlFor="examType">Exam Type *</label>
+                    <select
+                      id="examType"
+                      value={examType}
+                      onChange={e => setExamType(e.target.value as ExamType)}
+                      className={styles.select}
                       required
-                    />
+                    >
+                      <option value="JCE">JCE — Junior Certificate of Education</option>
+                      <option value="MSCE">MSCE — Malawi School Certificate of Education</option>
+                      <option value="PLSCE">PLSCE — Primary Leaving School Certificate</option>
+                    </select>
                   </div>
 
                   <div className={styles.formGroup}>
                     <label htmlFor="examYear">Exam Year *</label>
-                    <input
-                      type="text"
+                    <select
                       id="examYear"
-                      name="examYear"
-                      placeholder="e.g., 2024"
-                      pattern="\d{4}"
-                      maxLength={4}
+                      value={examYear}
+                      onChange={e => setExamYear(e.target.value)}
+                      className={styles.select}
                       required
-                    />
+                    >
+                      {[2025, 2024, 2023, 2022, 2021, 2020].map(y => (
+                        <option key={y} value={String(y)}>{y}</option>
+                      ))}
+                    </select>
                   </div>
 
-                  <div className={styles.formGroup}>
-                    <label htmlFor="file">CSV File *</label>
-                    <input
-                      type="file"
-                      id="file"
-                      name="file"
-                      accept=".csv"
-                      required
-                    />
-                    <small>
-                      Format: examNumber, dob (YYYY-MM-DD), name, subject1, grade1, subject2, grade2, ...
-                    </small>
-                  </div>
-
-                  <button type="submit" disabled={isUploading} className={styles.uploadButton}>
-                    {isUploading ? '⏳ Processing & Uploading...' : '📤 Upload to CDN'}
+                  <button
+                    type="submit"
+                    disabled={isPublishing}
+                    className={styles.uploadButton}
+                  >
+                    {isPublishing
+                      ? '⏳ Fetching from DB & Publishing...'
+                      : `🚀 Publish ${examType} ${examYear} to CDN`}
                   </button>
                 </form>
 
-                {/* Success result */}
-                {uploadStatus === 'success' && uploadResult && (
+                {/* Success */}
+                {publishResult?.success && (
                   <div className={`${styles.statusMessage} ${styles.success}`}>
-                    <strong>✓ Upload successful</strong>
+                    <strong>✓ {publishResult.message}</strong>
                     <div style={{ marginTop: 8, fontSize: 12 }}>
-                      <div>School: {uploadResult.school}</div>
-                      <div>Centre: {uploadResult.centre}</div>
-                      <div>Students: {uploadResult.totalStudents}</div>
-                      <div>
-                        CDN URL:{' '}
-                        <a href={uploadResult.publicUrl} target="_blank" rel="noreferrer" style={{ color: '#2e7d32' }}>
-                          {uploadResult.publicUrl}
-                        </a>
-                      </div>
-                      {uploadResult.parseErrors && uploadResult.parseErrors.length > 0 && (
-                        <div style={{ marginTop: 6, color: '#e65100' }}>
-                          ⚠ {uploadResult.parseErrors.length} row(s) skipped — check CSV format
+                      <div>Schools published: {publishResult.totalSchools}</div>
+                      <div>Total students: {publishResult.totalStudents}</div>
+                      {publishResult.mockMode && (
+                        <div style={{ color: '#e65100', marginTop: 4 }}>
+                          ⚠ Mock mode — files stored on local CDN server
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
-
-                {/* Error result */}
-                {uploadStatus === 'error' && uploadResult && (
-                  <div className={`${styles.statusMessage} ${styles.error}`}>
-                    <strong>✗ Upload failed</strong>
-                    <div style={{ marginTop: 4, fontSize: 12 }}>{uploadResult.error}</div>
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.uploadCard}>
-                <h3>CSV Format</h3>
-                <pre className={styles.codeBlock}>
-{`examNumber,dob,name,subject1,grade1,subject2,grade2
-J0282/098,1990-05-15,John Banda,Mathematics,A,English,B
-J0282/099,1991-03-20,Mary Phiri,Mathematics,B,English,A
-J0282/100,1989-12-10,Peter Mwale,Mathematics,C,Biology,B`}
-                </pre>
-                <p style={{ marginTop: 12, fontSize: 12, color: '#666' }}>
-                  <strong>Exam number format:</strong> J&#123;CENTRE&#125;/&#123;CANDIDATE&#125;<br />
-                  The centre number (e.g. <code>0282</code>) is extracted automatically.<br />
-                  All rows in one CSV must belong to the same centre.
-                </p>
-
-                {/* Upload history */}
-                {uploadHistory.length > 0 && (
-                  <>
-                    <h3 style={{ marginTop: 20 }}>Upload History</h3>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                        <thead>
-                          <tr style={{ background: '#f0f8fb' }}>
-                            <th style={thStyle}>Centre</th>
-                            <th style={thStyle}>School</th>
-                            <th style={thStyle}>Year</th>
-                            <th style={thStyle}>Students</th>
-                            <th style={thStyle}>Uploaded</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {uploadHistory
-                            .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
-                            .map((rec, i) => (
+                    {publishResult.schools && publishResult.schools.length > 0 && (
+                      <div style={{ marginTop: 10, overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ background: '#e8f5e9' }}>
+                              <th style={thStyle}>Centre</th>
+                              <th style={thStyle}>School</th>
+                              <th style={thStyle}>Students</th>
+                              <th style={thStyle}>CDN URL</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {publishResult.schools.map((s, i) => (
                               <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                                <td style={tdStyle}>{rec.centre}</td>
-                                <td style={tdStyle}>{rec.school}</td>
-                                <td style={tdStyle}>{rec.examYear}</td>
-                                <td style={tdStyle}>{rec.totalStudents}</td>
-                                <td style={tdStyle}>{new Date(rec.uploadedAt).toLocaleString()}</td>
+                                <td style={tdStyle}>{s.centre}</td>
+                                <td style={tdStyle}>{s.school}</td>
+                                <td style={tdStyle}>{s.totalStudents}</td>
+                                <td style={tdStyle}>
+                                  <a href={s.publicUrl} target="_blank" rel="noreferrer"
+                                    style={{ color: '#2e7d32', fontSize: 10 }}>
+                                    View ↗
+                                  </a>
+                                </td>
                               </tr>
                             ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {publishResult.failures && publishResult.failures.length > 0 && (
+                      <div style={{ marginTop: 8, color: '#c62828', fontSize: 11 }}>
+                        ⚠ {publishResult.failures.length} school(s) failed to publish
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Error */}
+                {publishResult && !publishResult.success && (
+                  <div className={`${styles.statusMessage} ${styles.error}`}>
+                    <strong>✗ Publish failed</strong>
+                    <div style={{ marginTop: 4, fontSize: 12 }}>{publishResult.error}</div>
+                    {publishResult.hint && (
+                      <div style={{ marginTop: 4, fontSize: 11, color: '#888' }}>
+                        {publishResult.hint}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
+
+              {/* ── Publish history ── */}
+              <div className={styles.uploadCard}>
+                <h3>Publish History</h3>
+                <p style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+                  Schools currently published to CDN
+                </p>
+
+                {uploadHistory.length === 0 ? (
+                  <p style={{ fontSize: 12, color: '#aaa', textAlign: 'center', padding: '20px 0' }}>
+                    No results published yet
+                  </p>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f0f8fb' }}>
+                          <th style={thStyle}>Exam</th>
+                          <th style={thStyle}>Centre</th>
+                          <th style={thStyle}>School</th>
+                          <th style={thStyle}>Students</th>
+                          <th style={thStyle}>Published</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {uploadHistory
+                          .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+                          .map((rec, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                              <td style={tdStyle}>{rec.examType || 'JCE'} {rec.examYear}</td>
+                              <td style={tdStyle}>{rec.centre}</td>
+                              <td style={tdStyle}>{rec.school}</td>
+                              <td style={tdStyle}>{rec.totalStudents}</td>
+                              <td style={tdStyle}>{new Date(rec.uploadedAt).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
         )}

@@ -30,12 +30,67 @@
 
 const http = require('http');
 const url  = require('url');
+const fs   = require('fs');
+const path = require('path');
 
-const PORT = process.env.CDN_PORT || 4000;
+const PORT       = process.env.CDN_PORT || 4000;
+const STORE_DIR  = path.join(__dirname, 'store');
 
-// ─── In-memory object store ───────────────────────────────────────────────────
-// key → { body, contentType, cacheControl, uploadedAt, size, cacheHits }
+// Ensure store directory exists
+if (!fs.existsSync(STORE_DIR)) fs.mkdirSync(STORE_DIR, { recursive: true });
+
+// ─── In-memory object store (loaded from disk on startup) ─────────────────────
 const store = new Map();
+
+// ─── Persist helpers ──────────────────────────────────────────────────────────
+
+function keyToFilePath(key) {
+  // Sanitize key to safe file path
+  const safe = key.replace(/[^a-zA-Z0-9/_.-]/g, '_');
+  const full = path.join(STORE_DIR, safe);
+  // Ensure subdirectory exists
+  fs.mkdirSync(path.dirname(full), { recursive: true });
+  return full;
+}
+
+function saveToDisk(obj) {
+  try {
+    const filePath = keyToFilePath(obj.key);
+    const meta = { ...obj };
+    delete meta.body;
+    fs.writeFileSync(filePath + '.body', obj.body, 'utf8');
+    fs.writeFileSync(filePath + '.meta', JSON.stringify(meta), 'utf8');
+  } catch (e) {
+    console.error(`[CDN] Failed to persist ${obj.key}:`, e.message);
+  }
+}
+
+function loadFromDisk() {
+  let count = 0;
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        walk(path.join(dir, entry.name));
+      } else if (entry.name.endsWith('.meta')) {
+        try {
+          const metaPath = path.join(dir, entry.name);
+          const bodyPath = metaPath.replace('.meta', '.body');
+          const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+          const body = fs.readFileSync(bodyPath, 'utf8');
+          store.set(meta.key, { ...meta, body });
+          count++;
+        } catch {}
+      }
+    }
+  }
+  walk(STORE_DIR);
+  return count;
+}
+
+// Load persisted files on startup
+const loaded = loadFromDisk();
+if (loaded > 0) console.log(`[CDN] Loaded ${loaded} object(s) from disk`);
 
 // ─── K6 results collector ─────────────────────────────────────────────────────
 const k6Results = {
@@ -229,6 +284,11 @@ async function router(req, res) {
   if (method === 'DELETE' && pathname === '/clear') {
     const count = store.size;
     store.clear();
+    // Wipe disk store too
+    try {
+      fs.rmSync(STORE_DIR, { recursive: true, force: true });
+      fs.mkdirSync(STORE_DIR, { recursive: true });
+    } catch {}
     send(res, 200, {}, { success: true, message: `Cleared ${count} object(s)` });
     return;
   }
@@ -297,6 +357,7 @@ async function router(req, res) {
       };
 
       store.set(key, obj);
+      saveToDisk(obj);
 
       console.log(`[CDN] PUT /${key} — ${obj.size} bytes`);
 

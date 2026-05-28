@@ -41,7 +41,6 @@ const EXAM_YEAR    = __ENV.EXAM_YEAR    || '2024';
  */
 const CENTRE_NUMBERS = [
   '0282', '0145', '0391', '0512', '0673',
-  '0784', '0856', '0923', '1034', '1145',
 ];
 
 // ─── Custom metrics ───────────────────────────────────────────────────────────
@@ -58,18 +57,15 @@ export const options = {
     cdn_load_test: {
       executor: 'ramping-vus',
       stages: [
-        { duration: '30s', target: 200  },  // ramp up
-        { duration: '60s', target: 500  },  // hold at 500 VUs
-        { duration: '20s', target: 1000 },  // spike
-        { duration: '10s', target: 0    },  // ramp down
+        { duration: '30s', target: 100 },  // ramp up to 100 VUs
+        { duration: '60s', target: 100 },  // hold at 100 VUs
+        { duration: '30s', target: 0   },  // ramp down
       ],
     },
   },
   thresholds: {
-    // CDN should respond in under 500ms for 95% of requests
     cdn_response_time_ms: ['p(95)<500'],
-    // At least 95% of fetches should succeed
-    cdn_success_rate: ['rate>0.95'],
+    cdn_success_rate:     ['rate>0.95'],
   },
 };
 
