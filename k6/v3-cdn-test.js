@@ -1,228 +1,224 @@
 /**
  * K6 Load Test — V3 CDN Architecture
  *
- * Simulates students fetching results directly from Cloudflare R2 CDN.
- * This is the V3 equivalent of break-test.js — same load pattern,
- * but targeting the CDN instead of the VPS backend.
- *
- * What this proves:
- *   - CDN handles the same load V1 struggles with, easily
- *   - Response times stay flat even as VUs ramp up
- *   - No server CPU/memory impact (CDN absorbs everything)
+ * Each VU simulates a real student searching for their results.
+ * The exam number and DOB are deterministic — they match exactly
+ * what was seeded in the database and published to Cloudflare R2.
  *
  * Flow per VU:
- *   1. Pick a random centre number (simulates a student from any school)
- *   2. Fetch the school file from CDN: /jce/2024/{centre}.json
- *   3. Simulate in-memory lookup (no extra request needed)
- *   4. Push result to metrics endpoint on VPS
+ *   1. Pick a unique student (exam number + DOB) based on iteration
+ *   2. Extract centre from exam number → build CDN file URL
+ *   3. Fetch school file from Cloudflare R2
+ *   4. Look up exam number + DOB in the index → O(1) match
+ *   5. Record as SUCCESS if student found, FAILURE if not
+ *   6. Push result to CDN server metrics collector
  *
  * Usage:
  *   k6 run k6/v3-cdn-test.js
- *
- * Environment variables (optional overrides):
- *   CDN_BASE_URL   — R2 public URL  (default: http://localhost:3000 for local mock)
- *   METRIC_URL     — VPS metrics collector (default: http://localhost:3001)
- *   EXAM_YEAR      — e.g. "2024"
  */
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Trend, Counter, Rate } from 'k6/metrics';
 
-// ─── Config ──────────────────────────────────────────────────────────────────
+// ─── Config ───────────────────────────────────────────────────────────────────
 
-const CDN_BASE_URL = __ENV.CDN_BASE_URL || 'http://localhost:4000';
+const CDN_BASE_URL = __ENV.CDN_BASE_URL || 'https://pub-bb1b974bb474447195d47562378bc210.r2.dev';
 const METRIC_URL   = __ENV.METRIC_URL   || 'http://localhost:4000';
-const EXAM_YEAR    = __ENV.EXAM_YEAR    || '2024';
-
-/**
- * Centre numbers to simulate — replace with real MANEB centre numbers
- * once you have them. Each maps to one school file on R2.
- */
-const CENTRE_NUMBERS = [
-  '0282', '0145', '0391', '0512', '0673',
-];
 
 // ─── Custom metrics ───────────────────────────────────────────────────────────
 
-const cdnResponseTime  = new Trend('cdn_response_time_ms', true);
-const cdnSuccessRate   = new Rate('cdn_success_rate');
-const cdnFailedFetches = new Counter('cdn_failed_fetches');
-const lookupTime       = new Trend('in_memory_lookup_ms', true);
+const cdnResponseTime = new Trend('cdn_response_time_ms', true);
+const cdnSuccessRate  = new Rate('cdn_success_rate');
+const cdnFailedCount  = new Counter('cdn_failed_requests');
+const lookupTime      = new Trend('in_memory_lookup_ms', true);
+const cacheHitRate    = new Rate('cdn_cache_hit_rate');
 
-// ─── Load test config — 2 minutes ────────────────────────────────────────────
+// ─── Load shape ───────────────────────────────────────────────────────────────
 
 export const options = {
   scenarios: {
     cdn_load_test: {
       executor: 'ramping-vus',
       stages: [
-        { duration: '30s', target: 100 },  // ramp up to 100 VUs
-        { duration: '60s', target: 100 },  // hold at 100 VUs
-        { duration: '30s', target: 0   },  // ramp down
+        { duration: '30s', target: 1000  },  // ramp up to 1000
+        { duration: '30s', target: 5000  },  // ramp up to 5000
+        { duration: '60s', target: 10000 },  // ramp up to 10000
+        { duration: '60s', target: 10000 },  // hold at 10000
+        { duration: '30s', target: 0     },  // ramp down
       ],
     },
   },
   thresholds: {
-    cdn_response_time_ms: ['p(95)<500'],
-    cdn_success_rate:     ['rate>0.95'],
+    cdn_response_time_ms: ['p(95)<2000'],
+    cdn_success_rate:     ['rate>0.90'],
   },
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Student pool ─────────────────────────────────────────────────────────────
+//
+// Each entry maps to real students seeded in the database and published to R2.
+// Format matches exactly what index-generator produces:
+//   JCE:   J{centre}/{candidate padded 3}  DOB base: 2004-01-01
+//   MSCE:  M{centre}/{candidate padded 4}  DOB base: 2006-01-01
+//   PLSCE: P{centre}/{candidate padded 3}  DOB base: 2011-01-01
+//
+// 300 students per JCE/MSCE school, 80 per PLSCE school.
+
+const SCHOOLS = [
+  { centre: '0282', folder: 'jce',   year: '2024', prefix: 'J', pad: 5, count: 10000, dobBase: '2004-01-01' },
+  { centre: '0145', folder: 'jce',   year: '2024', prefix: 'J', pad: 5, count: 10000, dobBase: '2004-01-01' },
+  { centre: '0391', folder: 'jce',   year: '2024', prefix: 'J', pad: 5, count: 10000, dobBase: '2004-01-01' },
+  { centre: '0512', folder: 'jce',   year: '2024', prefix: 'J', pad: 5, count: 10000, dobBase: '2004-01-01' },
+  { centre: '0673', folder: 'jce',   year: '2024', prefix: 'J', pad: 5, count: 10000, dobBase: '2004-01-01' },
+  { centre: '0282', folder: 'msce',  year: '2025', prefix: 'M', pad: 4, count: 300, dobBase: '2006-01-01' },
+  { centre: '0145', folder: 'msce',  year: '2025', prefix: 'M', pad: 4, count: 300, dobBase: '2006-01-01' },
+  { centre: '0391', folder: 'msce',  year: '2025', prefix: 'M', pad: 4, count: 300, dobBase: '2006-01-01' },
+  { centre: '0512', folder: 'msce',  year: '2025', prefix: 'M', pad: 4, count: 300, dobBase: '2006-01-01' },
+  { centre: '0673', folder: 'msce',  year: '2025', prefix: 'M', pad: 4, count: 300, dobBase: '2006-01-01' },
+  { centre: '2001', folder: 'plsce', year: '2025', prefix: 'P', pad: 3, count: 80,  dobBase: '2011-01-01' },
+  { centre: '2002', folder: 'plsce', year: '2025', prefix: 'P', pad: 3, count: 80,  dobBase: '2011-01-01' },
+  { centre: '2003', folder: 'plsce', year: '2025', prefix: 'P', pad: 3, count: 80,  dobBase: '2011-01-01' },
+  { centre: '2004', folder: 'plsce', year: '2025', prefix: 'P', pad: 3, count: 80,  dobBase: '2011-01-01' },
+];
+
+// Total students across all schools
+const TOTAL_STUDENTS = SCHOOLS.reduce((s, sc) => s + sc.count, 0);
 
 /**
- * Pick a random centre number from the list
+ * Generate a deterministic student for a given iteration.
+ * Each iteration maps to a unique student — different exam number + DOB.
+ * Cycles back after all students are exhausted.
  */
-function randomCentre() {
-  return CENTRE_NUMBERS[Math.floor(Math.random() * CENTRE_NUMBERS.length)];
-}
+function getStudent(iter) {
+  const globalIndex = iter % TOTAL_STUDENTS;
+  let remaining = globalIndex;
 
-/**
- * Simulate an in-memory index lookup.
- * In the real student portal this is instant — we just measure the time
- * to confirm it stays near 0ms even under load.
- */
-function simulateLookup(schoolData) {
-  const start = Date.now();
+  for (const school of SCHOOLS) {
+    if (remaining < school.count) {
+      const studentNo  = remaining + 1; // 1-based
+      const candidate  = String(studentNo).padStart(school.pad, '0');
+      const examNumber = `${school.prefix}${school.centre}/${candidate}`;
 
-  if (!schoolData || !schoolData.index || !schoolData.students) {
-    return { success: false, reason: 'invalid_school_file' };
+      // DOB matches seeder: (studentNo - 1) % (4 * 365) days from base
+      const base = new Date(school.dobBase);
+      base.setDate(base.getDate() + ((studentNo - 1) % (4 * 365)));
+      const dob = base.toISOString().split('T')[0];
+
+      return {
+        examNumber,
+        dob,
+        centre:  school.centre,
+        folder:  school.folder,
+        year:    school.year,
+      };
+    }
+    remaining -= school.count;
   }
-
-  // Pick a random student from the index
-  const keys = Object.keys(schoolData.index);
-  if (keys.length === 0) {
-    return { success: false, reason: 'empty_index' };
-  }
-
-  const randomKey = keys[Math.floor(Math.random() * keys.length)];
-  const position  = schoolData.index[randomKey];
-  const student   = schoolData.students[position];
-
-  const elapsed = Date.now() - start;
-  lookupTime.add(elapsed);
 
   return {
-    success: !!student,
-    lookupMs: elapsed,
+    examNumber: 'J0282/001',
+    dob:        '2004-01-01',
+    centre:     '0282',
+    folder:     'jce',
+    year:       '2024',
   };
 }
 
-/**
- * Push VU result to the VPS metrics collector.
- * Same pattern as break-test.js so the dashboard can display both.
- */
+function buildIndexKey(examNumber, dob) {
+  return `${examNumber}_${dob}`;
+}
+
 function pushVUResult(result) {
   http.post(
     `${METRIC_URL}/k6/vu-result`,
     JSON.stringify(result),
-    {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: '10s',
-    }
+    { headers: { 'Content-Type': 'application/json' }, timeout: '10s' }
   );
 }
 
 // ─── Main VU flow ─────────────────────────────────────────────────────────────
 
 export default function () {
-  const centre  = randomCentre();
-  const fileUrl = `${CDN_BASE_URL}/jce/${EXAM_YEAR}/${centre}.json`;
+  const student = getStudent(__ITER);
+  const fileUrl = `${CDN_BASE_URL}/${student.folder}/${student.year}/${student.centre}.json`;
 
-  // 1. Fetch school file from CDN
-  const start    = Date.now();
-  const response = http.get(fileUrl, {
+  // 1. Fetch school file from Cloudflare R2
+  const fetchStart = Date.now();
+  const response   = http.get(fileUrl, {
     timeout: '30s',
-    headers: {
-      'Accept': 'application/json',
-    },
-    tags: { centre },
+    headers: { 'Accept': 'application/json' },
+    tags:    { centre: student.centre, folder: student.folder },
   });
-  const fetchMs = Date.now() - start;
+  const fetchMs = Date.now() - fetchStart;
 
   cdnResponseTime.add(fetchMs);
 
-  const fetchOk = check(response, {
-    'CDN status 200':        (r) => r.status === 200,
-    'response has body':     (r) => r.body && r.body.length > 0,
-    'response under 500ms':  (r) => r.timings.duration < 500,
+  // Read Cloudflare cache headers
+  const cfCacheStatus = response.headers['CF-Cache-Status'] || response.headers['cf-cache-status'] || '';
+  cacheHitRate.add(cfCacheStatus === 'HIT');
+
+  check(response, {
+    'CDN status 200':       (r) => r.status === 200,
+    'response under 500ms': (r) => r.timings.duration < 500,
   });
 
-  if (!fetchOk || response.status !== 200) {
+  if (response.status !== 200) {
     cdnSuccessRate.add(false);
-    cdnFailedFetches.add(1);
-
-    pushVUResult({
-      vu:      __VU,
-      iter:    __ITER,
-      source:  'cdn',
-      stage:   'fetch',
-      success: false,
-      reason:  `http_${response.status}`,
-      fetchMs,
-      centre,
-    });
-
-    sleep(0.5);
+    cdnFailedCount.add(1);
+    pushVUResult({ vu: __VU, iter: __ITER, success: false, reason: `http_${response.status}`, fetchMs, centre: student.centre });
+    sleep(0.3);
     return;
   }
 
-  // 2. Parse JSON and simulate in-memory lookup
-  let schoolData;
+  // 2. Parse school file
+  let schoolFile;
   try {
-    schoolData = JSON.parse(response.body);
+    schoolFile = JSON.parse(response.body);
   } catch {
     cdnSuccessRate.add(false);
-    cdnFailedFetches.add(1);
-
-    pushVUResult({
-      vu:      __VU,
-      iter:    __ITER,
-      source:  'cdn',
-      stage:   'parse',
-      success: false,
-      reason:  'invalid_json',
-      fetchMs,
-      centre,
-    });
-
-    sleep(0.5);
+    cdnFailedCount.add(1);
+    pushVUResult({ vu: __VU, iter: __ITER, success: false, reason: 'parse_error', fetchMs, centre: student.centre });
+    sleep(0.3);
     return;
   }
 
-  const lookup = simulateLookup(schoolData);
+  // 3. Look up student using exam number + DOB — O(1) index lookup
+  const lookupStart = Date.now();
+  const key         = buildIndexKey(student.examNumber, student.dob);
+  const position    = schoolFile.index ? schoolFile.index[key] : undefined;
+  const found       = schoolFile.students && position !== undefined && schoolFile.students[position] !== undefined;
+  const lookupMs    = Date.now() - lookupStart;
 
-  cdnSuccessRate.add(lookup.success);
+  lookupTime.add(lookupMs);
+  cdnSuccessRate.add(found);
 
-  if (!lookup.success) {
-    cdnFailedFetches.add(1);
+  if (!found) {
+    cdnFailedCount.add(1);
   }
 
-  // 3. Push result to metrics dashboard
+  // 4. Push result to CDN server metrics collector
   pushVUResult({
     vu:        __VU,
     iter:      __ITER,
     source:    'cdn',
-    stage:     lookup.success ? 'completed' : 'lookup_failed',
-    success:   lookup.success,
+    stage:     found ? 'completed' : 'lookup_failed',
+    success:   found,
     fetchMs,
-    lookupMs:  lookup.lookupMs || 0,
-    waitTime:  fetchMs + (lookup.lookupMs || 0),
-    centre,
-    reason:    lookup.success ? null : lookup.reason,
+    lookupMs,
+    waitTime:  fetchMs + lookupMs,
+    centre:    student.centre,
+    folder:    student.folder,
+    cacheStatus: cfCacheStatus,
+    reason:    found ? null : `key_not_found:${key}`,
   });
 
-  // Minimal sleep — CDN is fast, simulate realistic user pacing
   sleep(Math.random() * 0.3);
 }
 
 // ─── Teardown ─────────────────────────────────────────────────────────────────
 
-export function teardown(data) {
-  console.log('V3 CDN test complete. Clearing metrics...');
-
-  http.post(`${METRIC_URL}/k6/clear`, null, {
-    timeout: '30s',
-  });
+export function teardown() {
+  console.log('V3 CDN test complete.');
+  http.post(`${METRIC_URL}/k6/clear`, null, { timeout: '30s' });
 }

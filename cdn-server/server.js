@@ -29,9 +29,8 @@
  */
 
 const http = require('http');
-const url  = require('url');
-const fs   = require('fs');
 const path = require('path');
+const fs   = require('fs');
 
 const PORT       = process.env.CDN_PORT || 4000;
 const STORE_DIR  = path.join(__dirname, 'store');
@@ -223,9 +222,9 @@ k6_success_rate_percent ${successRate}
 // ─── Request router ───────────────────────────────────────────────────────────
 
 async function router(req, res) {
-  const parsed   = url.parse(req.url, true);
-  const pathname = parsed.pathname;
-  const method   = req.method.toUpperCase();
+  const parsedUrl = new URL(req.url, `http://localhost`);
+  const pathname  = parsedUrl.pathname;
+  const method    = req.method.toUpperCase();
 
   // CORS preflight
   if (method === 'OPTIONS') {

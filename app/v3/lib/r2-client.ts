@@ -38,7 +38,8 @@ function getR2Client(): S3Client {
  */
 export async function uploadSchoolFileToR2(
   schoolFile: V3SchoolFile,
-  examYear: string
+  examYear: string,
+  examType: string = 'jce'
 ): Promise<string> {
   const bucket    = process.env.R2_BUCKET_NAME;
   const publicUrl = process.env.R2_PUBLIC_URL;
@@ -47,8 +48,11 @@ export async function uploadSchoolFileToR2(
     throw new Error('Missing R2_BUCKET_NAME or R2_PUBLIC_URL in environment variables');
   }
 
-  const key  = `jce/${examYear}/${schoolFile.centre}.json`;
-  const body = JSON.stringify(schoolFile);
+  // Path: {examType}/{examYear}/{centre}.json
+  // e.g. msce/2025/0282.json
+  const folder = examType.toLowerCase();
+  const key    = `${folder}/${examYear}/${schoolFile.centre}.json`;
+  const body   = JSON.stringify(schoolFile);
 
   await getR2Client().send(
     new PutObjectCommand({
@@ -70,7 +74,8 @@ export async function uploadSchoolFileToR2(
 export async function appendToUploadLog(record: V3UploadRecord): Promise<void> {
   const client = getR2Client();
   const bucket = process.env.R2_BUCKET_NAME!;
-  const logKey = 'jce/uploads-log.json';
+  const folder = record.examType.toLowerCase();
+  const logKey = `${folder}/uploads-log.json`;
 
   let existing: V3UploadRecord[] = [];
 

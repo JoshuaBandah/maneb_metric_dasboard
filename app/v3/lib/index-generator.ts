@@ -17,8 +17,10 @@ import { V3SchoolFile, V3Student, V3Subject } from './v3-types';
  * J0282/098  →  "0282"
  */
 export function extractCentreNumber(examNumber: string): string | null {
-  // Pattern: J followed by digits, then slash, then candidate digits
-  const match = examNumber.trim().match(/^J(\d+)\//i);
+  // Pattern: J or M followed by digits, then slash, then candidate digits
+  // JCE:  J0282/098
+  // MSCE: M0282/0001
+  const match = examNumber.trim().match(/^[JM](\d+)\//i);
   if (!match) return null;
   return match[1];
 }

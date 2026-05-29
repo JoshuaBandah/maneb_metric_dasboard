@@ -62,13 +62,17 @@ export async function POST(request: NextRequest) {
 
     if (!centre) {
       return NextResponse.json(
-        { error: 'Invalid exam number format. Expected: J0282/001' },
+        { error: 'Invalid exam number format. Expected: J0282/001 or M0282/0001' },
         { status: 400 }
       );
     }
 
+    // Detect exam type from prefix: J = JCE, M = MSCE, P = PLSCE
+    const prefix = exam.charAt(0).toUpperCase();
+    const examTypeFolder = prefix === 'M' ? 'msce' : prefix === 'P' ? 'plsce' : 'jce';
+
     const cdnBase  = getCDNBaseUrl();
-    const fileUrl  = `${cdnBase}/jce/${year}/${centre}.json`;
+    const fileUrl  = `${cdnBase}/${examTypeFolder}/${year}/${centre}.json`;
     const fetchStart = Date.now();
 
     // Fetch school file from CDN

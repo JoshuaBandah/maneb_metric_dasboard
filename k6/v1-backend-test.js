@@ -25,10 +25,7 @@ import { Trend, Counter, Rate } from 'k6/metrics';
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const BASE_URL   = __ENV.BASE_URL   || 'http://localhost:3001';
-const METRIC_URL = __ENV.METRIC_URL || 'http://localhost:3001';
-
-// Total students in the test dataset (matches generated CSVs)
-const TOTAL_STUDENTS = 10000;
+const METRIC_URL = __ENV.METRIC_URL || 'http://localhost:3002'; // V1 backend directly
 
 // ─── Custom metrics ───────────────────────────────────────────────────────────
 
@@ -59,20 +56,44 @@ export const options = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function generateStudent(index) {
-  const centre    = '0282'; // Zomba Secondary — has 10000 students
-  const candidate = String((index % TOTAL_STUDENTS) + 1).padStart(3, '0');
-  const base      = new Date('2004-01-01');
-  base.setDate(base.getDate() + (index % (4 * 365)));
+// ─── Student pool — spread across all schools and exam types ─────────────────
+
+const SCHOOLS = [
+  { centre: '0282', prefix: 'J', year: '2024', pad: 3, max: 300 }, // JCE Zomba
+  { centre: '0145', prefix: 'J', year: '2024', pad: 3, max: 300 }, // JCE Blantyre
+  { centre: '0391', prefix: 'J', year: '2024', pad: 3, max: 300 }, // JCE Lilongwe Girls
+  { centre: '0512', prefix: 'J', year: '2024', pad: 3, max: 300 }, // JCE Mzuzu
+  { centre: '0673', prefix: 'J', year: '2024', pad: 3, max: 300 }, // JCE Dedza
+  { centre: '0282', prefix: 'M', year: '2025', pad: 4, max: 300 }, // MSCE Zomba
+  { centre: '0145', prefix: 'M', year: '2025', pad: 4, max: 300 }, // MSCE Blantyre
+  { centre: '0391', prefix: 'M', year: '2025', pad: 4, max: 300 }, // MSCE Lilongwe Girls
+  { centre: '0512', prefix: 'M', year: '2025', pad: 4, max: 300 }, // MSCE Mzuzu
+  { centre: '0673', prefix: 'M', year: '2025', pad: 4, max: 300 }, // MSCE Dedza
+];
+
+function generateStudent(iter) {
+  // Pick a different school for each iteration — round robin across all schools
+  const school    = SCHOOLS[iter % SCHOOLS.length];
+  // Pick a different student within that school
+  const studentNo = (Math.floor(iter / SCHOOLS.length) % school.max) + 1;
+  const candidate = String(studentNo).padStart(school.pad, '0');
+  const examNumber = `${school.prefix}${school.centre}/${candidate}`;
+
+  // DOB matches what was seeded: student 1 = base date, student 2 = base+1, etc.
+  const baseYear = school.prefix === 'M' ? 2006 : 2004;
+  const base = new Date(`${baseYear}-01-01`);
+  base.setDate(base.getDate() + ((studentNo - 1) % (4 * 365)));
+
   return {
-    examNumber: `J${centre}/${candidate}`,
-    dob:        base.toISOString().split('T')[0],
+    examNumber,
+    dob:      base.toISOString().split('T')[0],
+    examYear: school.year,
   };
 }
 
 function pushVUResult(result) {
   http.post(
-    `${METRIC_URL}/v1/api/metrics/collect`,
+    `${METRIC_URL}/k6/vu-result`,
     JSON.stringify(result),
     {
       headers: { 'Content-Type': 'application/json' },
@@ -93,12 +114,12 @@ export default function () {
     JSON.stringify({
       examNumber: student.examNumber,
       dob:        student.dob,
-      examYear:   '2024',
+      examYear:   student.examYear,
     }),
     {
       headers: { 'Content-Type': 'application/json' },
       timeout: '30s',
-      tags: { version: 'v1' },
+      tags: { version: 'v1', school: student.examNumber.substring(0, 6) },
     }
   );
 
@@ -120,6 +141,16 @@ export default function () {
     v1FailedCount.add(1);
   }
 
+  // Push result to V1 backend metrics collector
+  pushVUResult({
+    vu:          __VU,
+    iter:        __ITER,
+    success,
+    waitTime:    elapsed,
+    responseTime: elapsed,
+    source:      'v1',
+  });
+
   sleep(Math.random() * 0.3);
 }
 
@@ -127,4 +158,5 @@ export default function () {
 
 export function teardown() {
   console.log('V1 backend test complete.');
+  http.post(`${METRIC_URL}/k6/clear`, null, { timeout: '10s' });
 }

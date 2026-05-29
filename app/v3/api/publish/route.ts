@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateV3SchoolFile } from '../../lib/index-generator';
 import { uploadSchoolFileToR2, appendToUploadLog, getCDNBaseUrl } from '../../lib/r2-client';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+const BACKEND_URL = process.env.V3_DB_URL || 'http://localhost:3002';
 
 export type ExamType = 'JCE' | 'MSCE' | 'PLSCE';
 
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Upload to CDN
-        const publicUrl = await uploadSchoolFileToR2(schoolFile, examYear);
+        const publicUrl = await uploadSchoolFileToR2(schoolFile, examYear, examType);
 
         // Log it
         await appendToUploadLog({

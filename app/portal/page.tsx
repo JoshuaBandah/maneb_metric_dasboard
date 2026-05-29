@@ -27,7 +27,7 @@ interface SearchResult {
 
 export default function StudentPortal() {
   // Version is set by the admin dashboard switch — invisible to students
-  const [version, setVersion]       = useState<Version>('v3');
+  const [version, setVersion] = useState<Version>('v3');
   const [examNumber, setExamNumber] = useState('');
   const [dob, setDob]               = useState('');
   const [state, setState]           = useState<PortalState>('search');
@@ -37,10 +37,11 @@ export default function StudentPortal() {
 
   const EXAM_YEAR = process.env.NEXT_PUBLIC_EXAM_YEAR || '2024';
 
-  // Read version from localStorage — set by admin dashboard switch buttons
+  // Always use V3 — portal is V3 focused
   useEffect(() => {
-    const saved = localStorage.getItem('maneb_portal_version') as Version | null;
-    if (saved === 'v1' || saved === 'v3') setVersion(saved);
+    // Force V3 in localStorage so it's always consistent
+    localStorage.setItem('maneb_portal_version', 'v3');
+    setVersion('v3');
 
     // Listen for storage changes (when admin switches in another tab)
     const onStorage = (e: StorageEvent) => {

@@ -31,34 +31,22 @@ ChartJS.register(
 );
 
 const DEFAULT_METRICS = {
-  memory: {
-    used: 0,
-    total: 0,
-    usagePercent: 0,
-  },
-  latency: {
-    avgMs: 0,
-    p50Ms: 0,
-    p90Ms: 0,
-    p99Ms: 0,
-    eventLoopLagMs: 0,
-  },
-  requests: {
-    total: 0,
-    failed: 0,
-    success: 0,
-    errorRatePercent: 0,
-  },
-  cpu: {
-    usagePercent: 0,
-  },
+  memory: { used: 0, total: 0, usagePercent: 0 },
+  latency: { avgMs: 0, p50Ms: 0, p90Ms: 0, p99Ms: 0, eventLoopLagMs: 0 },
+  requests: { total: 0, failed: 0, success: 0, errorRatePercent: 0 },
+  cpu: { usagePercent: 0 },
   clientSideRequest: {
-    total_vus: 0,
-    success_vus: 0,
-    failed_vus: 0,
-    success_rate: 0,
-    avg_wait_time_ms: 0,
-    updatedAt: null,
+    total_vus: 0, success_vus: 0, failed_vus: 0,
+    success_rate: 0, avg_wait_time_ms: 0, updatedAt: null,
+  },
+  cloudflare: null as null | {
+    totalOperations: number;
+    reads: number;
+    writes: number;
+    breakdown: Record<string, number>;
+    storage: null | { objectCount: number; payloadBytes: number; payloadKB: number };
+    period: string;
+    real: boolean;
   },
 };
 
@@ -232,6 +220,7 @@ export default function V3Dashboard() {
           href="/v1/dashboard"
           className={styles.switchButton}
           onClick={() => localStorage.setItem('maneb_portal_version', 'v1')}
+          style={{ display: 'none' }}
         >
           Switch to V1 (Backend)
         </Link>
@@ -284,21 +273,12 @@ export default function V3Dashboard() {
             </div>
 
             <div className={styles.grid}>
-              <Card title="CPU Usage" value={`${(metrics.cpu?.usagePercent || 0).toFixed(1)}%`} />
-              <Card
-                title="Memory Usage"
-                value={`${(metrics.memory?.usagePercent || 0).toFixed(1)}%`}
-              />
-              <Card
-                title="CDN Response Time"
-                value={`${(metrics.latency?.avgMs || 0).toFixed(1)} ms`}
-              />
-              <Card title="Requests" value={metrics.requests?.total || 0} />
-              <Card title="Failed Requests" value={metrics.requests?.failed || 0} />
-              <Card
-                title="Error Rate"
-                value={`${(metrics.requests?.errorRatePercent || 0).toFixed(1)}%`}
-              />
+              <Card title="CDN Response Time"    value={`${(metrics.latency?.avgMs || 0).toFixed(1)} ms`} />
+              <Card title="CF Total Operations"  value={metrics.cloudflare?.totalOperations ?? 0} />
+              <Card title="CF Read Requests"     value={metrics.cloudflare?.reads ?? 0} />
+              <Card title="CF Write Requests"    value={metrics.cloudflare?.writes ?? 0} />
+              <Card title="Objects on CDN"       value={metrics.cloudflare?.storage?.objectCount ?? 0} />
+              <Card title="Storage Used"         value={metrics.cloudflare?.storage ? `${metrics.cloudflare.storage.payloadKB} KB` : '—'} />
             </div>
 
             <div className={styles.grid}>

@@ -32,61 +32,101 @@ app.use(express.json());
 // ─── Load / seed database ─────────────────────────────────────────────────────
 
 function seedDatabase() {
-  console.log('[DB] Seeding database with test data...');
+  console.log('[DB] Seeding database with MSCE 2025 + JCE 2024 data...');
 
-  const SCHOOLS = [
-    { centre: '0282', name: 'Zomba Secondary School',          students: 200 },
-    { centre: '0145', name: 'Blantyre Secondary School',       students: 200 },
-    { centre: '0391', name: 'Lilongwe Girls Secondary School', students: 200 },
-    { centre: '0512', name: 'Mzuzu Secondary School',          students: 200 },
-    { centre: '0673', name: 'Dedza Secondary School',          students: 200 },
+  const MSCE_SCHOOLS = [
+    { centre: '0282', name: 'Zomba Secondary School'          },
+    { centre: '0145', name: 'Blantyre Secondary School'       },
+    { centre: '0391', name: 'Lilongwe Girls Secondary School' },
+    { centre: '0512', name: 'Mzuzu Secondary School'          },
+    { centre: '0673', name: 'Dedza Secondary School'          },
+    { centre: '0784', name: 'Kasungu Secondary School'        },
+    { centre: '0856', name: 'Mangochi Secondary School'       },
+    { centre: '0923', name: 'Karonga Secondary School'        },
+    { centre: '1034', name: 'Ntcheu Secondary School'         },
+    { centre: '1145', name: 'Chiradzulu Secondary School'     },
   ];
 
-  const SUBJECTS = [
-    'Mathematics', 'English', 'Biology',
-    'Physical Science', 'History', 'Geography', 'Chichewa', 'Life Skills',
+  const JCE_SCHOOLS = [
+    { centre: '0282', name: 'Zomba Secondary School'          },
+    { centre: '0145', name: 'Blantyre Secondary School'       },
+    { centre: '0391', name: 'Lilongwe Girls Secondary School' },
+    { centre: '0512', name: 'Mzuzu Secondary School'          },
+    { centre: '0673', name: 'Dedza Secondary School'          },
   ];
 
-  const GRADES  = ['A','A','B','B','B','C','C','D','E','F'];
-  const FNAMES  = ['John','Mary','Peter','Grace','James','Faith','David','Hope','Joseph','Mercy','Daniel','Joy','Samuel','Blessing','Chisomo','Tadala','Kondwani','Thandeka','Mphatso','Dalitso'];
-  const LNAMES  = ['Banda','Phiri','Mwale','Chirwa','Tembo','Gondwe','Nyirenda','Kamanga','Mbewe','Nkhoma','Mkandawire','Msiska','Kalua','Chisale','Matemba'];
+  const SUBJECTS = ['Mathematics','English','Biology','Physical Science','History','Geography','Chichewa','Life Skills'];
+  const GRADES   = ['A','A','B','B','B','C','C','D','E','F'];
+  const FNAMES   = ['John','Mary','Peter','Grace','James','Faith','David','Hope','Joseph','Mercy','Daniel','Joy','Samuel','Blessing','Chisomo','Tadala','Kondwani','Thandeka','Mphatso','Dalitso'];
+  const LNAMES   = ['Banda','Phiri','Mwale','Chirwa','Tembo','Gondwe','Nyirenda','Kamanga','Mbewe','Nkhoma','Mkandawire','Msiska','Kalua','Chisale','Matemba'];
 
   const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
-  function dob(i) {
-    const d = new Date('2004-01-01');
+  function dob(i, baseYear) {
+    const d = new Date(`${baseYear}-01-01`);
     d.setDate(d.getDate() + (i % (4 * 365)));
     return d.toISOString().split('T')[0];
   }
 
-  const rows = []; // flat rows — one per subject per student
+  const rows = [];
 
-  for (const school of SCHOOLS) {
-    for (let i = 1; i <= school.students; i++) {
-      const candidate  = String(i).padStart(3, '0');
-      const examNumber = `J${school.centre}/${candidate}`;
-      const dobVal     = dob(i - 1);
+  // MSCE 2025 — 10 schools × 300 students
+  for (const school of MSCE_SCHOOLS) {
+    console.log(`[DB] MSCE 2025 — ${school.name}...`);
+    for (let i = 1; i <= 300; i++) {
+      const examNumber = `M${school.centre}/${String(i).padStart(4,'0')}`;
+      const dobVal     = dob(i - 1, 2006);
       const name       = `${rand(FNAMES)} ${rand(LNAMES)}`;
-
       for (const subject of SUBJECTS) {
-        rows.push({
-          examNumber,
-          dob:      dobVal,
-          name,
-          subject,
-          grade:    rand(GRADES),
-          school:   school.name,
-          centre:   school.centre,
-          examType: 'JCE',
-          year:     '2024',
-        });
+        rows.push({ examNumber, dob: dobVal, name, subject, grade: rand(GRADES), school: school.name, centre: school.centre, examType: 'MSCE', year: '2025' });
+      }
+    }
+  }
+
+  // JCE 2024 — 5 schools × 10,000 students
+  for (const school of JCE_SCHOOLS) {
+    console.log(`[DB] JCE 2024 — ${school.name} (10000 students)...`);
+    for (let i = 1; i <= 10000; i++) {
+      const examNumber = `J${school.centre}/${String(i).padStart(5,'0')}`;
+      const dobVal     = dob(i - 1, 2004);
+      const name       = `${rand(FNAMES)} ${rand(LNAMES)}`;
+      for (const subject of SUBJECTS) {
+        rows.push({ examNumber, dob: dobVal, name, subject, grade: rand(GRADES), school: school.name, centre: school.centre, examType: 'JCE', year: '2024' });
+      }
+    }
+  }
+
+  // PLSCE 2025 — 4 schools × 80 students
+  const PLSCE_SCHOOLS = [
+    { centre: '2001', name: 'Zomba Primary School'    },
+    { centre: '2002', name: 'Blantyre Primary School' },
+    { centre: '2003', name: 'Lilongwe Primary School' },
+    { centre: '2004', name: 'Mzuzu Primary School'    },
+  ];
+
+  const PLSCE_SUBJECTS = [
+    'Mathematics', 'English', 'Chichewa',
+    'Social Studies', 'Science', 'Religious Education',
+  ];
+
+  for (const school of PLSCE_SCHOOLS) {
+    console.log(`[DB] PLSCE 2025 — ${school.name}...`);
+    for (let i = 1; i <= 80; i++) {
+      const examNumber = `P${school.centre}/${String(i).padStart(3,'0')}`;
+      const dobVal     = dob(i - 1, 2011);
+      const name       = `${rand(FNAMES)} ${rand(LNAMES)}`;
+      for (const subject of PLSCE_SUBJECTS) {
+        rows.push({ examNumber, dob: dobVal, name, subject, grade: rand(GRADES), school: school.name, centre: school.centre, examType: 'PLSCE', year: '2025' });
       }
     }
   }
 
   const db = { seededAt: new Date().toISOString(), rows };
   fs.writeFileSync(DB_FILE, JSON.stringify(db), 'utf8');
-  console.log(`[DB] Seeded ${rows.length} rows (${SCHOOLS.reduce((s,sc)=>s+sc.students,0)} students across ${SCHOOLS.length} schools)`);
+  console.log(`[DB] Total: ${rows.length} rows`);
+  console.log(`[DB]   MSCE  2025: ${MSCE_SCHOOLS.length} schools × 300 students`);
+  console.log(`[DB]   JCE   2024: ${JCE_SCHOOLS.length} schools × 300 students`);
+  console.log(`[DB]   PLSCE 2025: 4 schools × 80 students`);
   return db;
 }
 
@@ -98,7 +138,11 @@ if (fs.existsSync(DB_FILE)) {
   db = seedDatabase();
 }
 
-// ─── K6 metrics store ─────────────────────────────────────────────────────────
+// ─── Concurrency tracker ──────────────────────────────────────────────────────
+// Tracks active concurrent requests to simulate DB connection pool exhaustion
+
+let activeRequests = 0;
+const MAX_CONNECTIONS = 20; // Simulates DB connection pool limit
 
 const k6 = {
   total_vus:        0,
@@ -171,31 +215,79 @@ app.get('/v1/metrics', (req, res) => {
 app.post('/v1/search', (req, res) => {
   const start = Date.now();
   const { regNumber, examNumber, dob } = req.body;
-  const exam = (examNumber || regNumber || '').trim().toUpperCase();
+  const exam   = (examNumber || regNumber || '').trim().toUpperCase();
   const dobVal = (dob || '').trim();
 
   if (!exam || !dobVal) {
     return res.status(400).json({ error: 'Missing examNumber or dob' });
   }
 
-  // Simulate DB query latency (50-300ms)
-  const delay = Math.floor(Math.random() * 250) + 50;
+  activeRequests++;
+
+  // ── Simulate realistic DB behaviour under load ──────────────────────────────
+  //
+  // Under low load (< 10 concurrent): fast, 50-150ms
+  // Under medium load (10-20): slower, 200-600ms
+  // Over connection pool limit (> 20): some requests timeout or fail
+  //
+  const load = activeRequests;
+
+  // Connection pool exhausted — reject with 503
+  if (load > MAX_CONNECTIONS + 10) {
+    activeRequests--;
+    k6.total_vus++;
+    k6.failed_vus++;
+    k6.updatedAt = new Date().toISOString();
+    return res.status(503).json({
+      success:      false,
+      error:        'Service unavailable — database connection pool exhausted',
+      responseTime: Date.now() - start,
+    });
+  }
+
+  // Calculate delay based on concurrency
+  let baseDelay;
+  if (load <= 10) {
+    baseDelay = Math.floor(Math.random() * 100) + 50;   // 50-150ms
+  } else if (load <= 20) {
+    baseDelay = Math.floor(Math.random() * 400) + 200;  // 200-600ms
+  } else {
+    baseDelay = Math.floor(Math.random() * 1000) + 500; // 500-1500ms
+  }
+
+  // Random timeout simulation (5% chance under high load)
+  const willTimeout = load > 15 && Math.random() < 0.05;
+  const delay = willTimeout ? 5000 : baseDelay;
 
   setTimeout(() => {
-    // Find all rows for this student
+    activeRequests--;
+
+    // Timeout response
+    if (willTimeout) {
+      k6.total_vus++;
+      k6.failed_vus++;
+      k6.updatedAt = new Date().toISOString();
+      return res.status(504).json({
+        success:      false,
+        error:        'Gateway timeout — database query took too long',
+        responseTime: Date.now() - start,
+      });
+    }
+
+    // Find student in DB
     const studentRows = db.rows.filter(
       r => r.examNumber === exam && r.dob === dobVal
     );
 
     if (studentRows.length === 0) {
       return res.status(404).json({
-        success: false,
-        error:   'Student not found',
+        success:      false,
+        error:        'Student not found',
         responseTime: Date.now() - start,
       });
     }
 
-    const first = studentRows[0];
+    const first   = studentRows[0];
     const student = {
       regNumber: first.examNumber,
       dob:       first.dob,
@@ -209,6 +301,7 @@ app.post('/v1/search', (req, res) => {
       data:         student,
       responseTime: Date.now() - start,
       source:       'database',
+      concurrency:  load,
     });
   }, delay);
 });
