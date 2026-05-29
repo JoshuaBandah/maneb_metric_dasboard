@@ -13,14 +13,14 @@
 import { V3SchoolFile, V3Student, V3Subject } from './v3-types';
 
 /**
- * Extract centre number from a MANEB JCE exam number.
- * J0282/098  →  "0282"
+ * Extract centre number from a MANEB exam number.
+ * J0282/098   →  "0282"  (JCE)
+ * M0282/0001  →  "0282"  (MSCE)
+ * P2001/001   →  "2001"  (PLSCE)
  */
 export function extractCentreNumber(examNumber: string): string | null {
-  // Pattern: J or M followed by digits, then slash, then candidate digits
-  // JCE:  J0282/098
-  // MSCE: M0282/0001
-  const match = examNumber.trim().match(/^[JM](\d+)\//i);
+  // Pattern: J, M, or P followed by digits, then slash, then candidate digits
+  const match = examNumber.trim().match(/^[JMP](\d+)\//i);
   if (!match) return null;
   return match[1];
 }
@@ -55,7 +55,8 @@ export function buildIndexKey(examNumber: string, dob: string): string {
 export function generateV3SchoolFile(
   csvContent: string,
   schoolName: string,
-  examYear: string
+  examYear: string,
+  examType: string = 'JCE'
 ): { file: V3SchoolFile; centre: string; errors: string[] } {
   const lines = csvContent.trim().split('\n');
   const errors: string[] = [];
@@ -100,7 +101,7 @@ export function generateV3SchoolFile(
     // Validate exam number format
     const extractedCentre = extractCentreNumber(examNumber);
     if (!extractedCentre) {
-      errors.push(`Line ${i + 1}: invalid exam number format "${examNumber}" (expected J0282/098), skipped`);
+      errors.push(`Line ${i + 1}: invalid exam number format "${examNumber}" (expected J0282/098, M0282/0001, or P2001/001), skipped`);
       continue;
     }
 
@@ -133,7 +134,7 @@ export function generateV3SchoolFile(
 
   if (!centre) {
     throw new Error(
-      'Could not extract centre number from CSV. Check exam number format (expected: J0282/098).'
+      'Could not extract centre number from CSV. Check exam number format (expected: J0282/098, M0282/0001, or P2001/001).'
     );
   }
 
@@ -150,7 +151,7 @@ export function generateV3SchoolFile(
   const schoolFile: V3SchoolFile = {
     centre,
     school: schoolName,
-    exam: `JCE ${examYear}`,
+    exam: `${examType.toUpperCase()} ${examYear}`,
     publishedAt: new Date().toISOString(),
     totalStudents: students.length,
     students,

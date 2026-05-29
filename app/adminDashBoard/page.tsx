@@ -12,7 +12,7 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ padding: '24px', textAlign: 'center' }}>
-      <p>Redirecting to V3 dashboard...</p>
+      <p>Redirecting to dashboard...</p>
     </div>
   );
 }

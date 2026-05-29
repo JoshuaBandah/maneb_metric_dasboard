@@ -92,6 +92,11 @@ const loaded = loadFromDisk();
 if (loaded > 0) console.log(`[CDN] Loaded ${loaded} object(s) from disk`);
 
 // ─── K6 results collector ─────────────────────────────────────────────────────
+// Uses a rolling window of the last 500 results so old failures don't
+// permanently drag the success rate down. Each entry: { success, fetchMs, lookupMs }
+const ROLLING_WINDOW = 4000;
+const k6Window = []; // circular buffer
+
 const k6Results = {
   total_vus:        0,
   success_vus:      0,
@@ -100,6 +105,20 @@ const k6Results = {
   total_lookup_ms:  0,
   updatedAt:        null,
 };
+
+// Recompute rolling stats from the window
+function recomputeK6Stats() {
+  let success = 0, failed = 0, fetchMs = 0, lookupMs = 0;
+  for (const r of k6Window) {
+    if (r.success) { success++; fetchMs += r.fetchMs; lookupMs += r.lookupMs; }
+    else failed++;
+  }
+  k6Results.total_vus      = k6Window.length;
+  k6Results.success_vus    = success;
+  k6Results.failed_vus     = failed;
+  k6Results.total_fetch_ms  = fetchMs;
+  k6Results.total_lookup_ms = lookupMs;
+}
 
 // ─── Prometheus counters ──────────────────────────────────────────────────────
 const prom = {
@@ -292,42 +311,60 @@ async function router(req, res) {
     return;
   }
 
-  // ── POST /k6/vu-result  (K6 pushes VU results here) ──────────────────────
+  // ── POST /k6/vu-result  (K6 + portal push results here) ─────────────────
   if (method === 'POST' && pathname === '/k6/vu-result') {
     try {
       const body   = await readBody(req);
-      const result = JSON.parse(body);
-
-      k6Results.total_vus++;
-      prom.k6_vus_total++;
-
-      if (result.success) {
-        k6Results.success_vus++;
-        prom.k6_vus_success++;
-        k6Results.total_fetch_ms  += result.fetchMs  || 0;
-        k6Results.total_lookup_ms += result.lookupMs || 0;
-      } else {
-        k6Results.failed_vus++;
-        prom.k6_vus_failed++;
+      if (!body) {
+        send(res, 200, {}, { received: true }); // ignore empty body
+        return;
       }
+
+      let result;
+      try {
+        result = JSON.parse(body);
+      } catch {
+        send(res, 200, {}, { received: true }); // ignore malformed JSON
+        return;
+      }
+
+      // Add to rolling window — evict oldest if over limit
+      k6Window.push({
+        success:  result.success === true,
+        fetchMs:  result.fetchMs  || 0,
+        lookupMs: result.lookupMs || 0,
+      });
+      if (k6Window.length > ROLLING_WINDOW) k6Window.shift();
+
+      // Recompute stats from window
+      recomputeK6Stats();
+      prom.k6_vus_total++;
+      if (result.success === true) prom.k6_vus_success++;
+      else prom.k6_vus_failed++;
 
       k6Results.updatedAt = new Date().toISOString();
 
+      // Always respond 200 — never block the caller
       send(res, 200, {}, { received: true });
     } catch {
-      send(res, 400, {}, { error: 'Invalid JSON' });
+      // Even on error, respond 200 so portal/K6 are never blocked
+      send(res, 200, {}, { received: true });
     }
     return;
   }
 
   // ── POST /k6/clear  (reset K6 counters) ──────────────────────────────────
   if (method === 'POST' && pathname === '/k6/clear') {
+    k6Window.length           = 0;
     k6Results.total_vus       = 0;
     k6Results.success_vus     = 0;
     k6Results.failed_vus      = 0;
     k6Results.total_fetch_ms  = 0;
     k6Results.total_lookup_ms = 0;
     k6Results.updatedAt       = null;
+    prom.k6_vus_total   = 0;
+    prom.k6_vus_success = 0;
+    prom.k6_vus_failed  = 0;
     send(res, 200, {}, { success: true, message: 'K6 results cleared' });
     return;
   }
@@ -430,6 +467,9 @@ const server = http.createServer((req, res) => {
     send(res, 500, {}, { error: 'Internal server error' });
   });
 });
+
+// Allow high concurrency — K6 can send thousands of requests simultaneously
+server.maxConnections = 100000;
 
 server.listen(PORT, () => {
   console.log(`

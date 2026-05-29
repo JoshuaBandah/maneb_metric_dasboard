@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
               success_vus:      k6?.success_vus  ?? 0,
               failed_vus:       k6?.failed_vus   ?? 0,
               success_rate:     k6?.success_rate ?? 0,
-              avg_wait_time_ms: k6?.avg_fetch_ms ?? 0,
+              avg_wait_time_ms: k6?.avg_lookup_ms ?? k6?.avg_fetch_ms ?? 0,
               updatedAt:        k6?.updatedAt    ?? null,
             },
 

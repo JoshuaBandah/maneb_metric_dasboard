@@ -12,6 +12,7 @@ import {
   Legend,
   ArcElement,
   BarElement,
+  Filler,
 } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import { useMetricsStream } from '../../hooks/useMetricsStream';
@@ -27,7 +28,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  BarElement
+  BarElement,
+  Filler
 );
 
 const DEFAULT_METRICS = {
@@ -86,7 +88,8 @@ export default function V3Dashboard() {
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
   const metricsEndpoint = `${apiUrl}/v3/api/metrics/stream`;
 
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
@@ -220,7 +223,6 @@ export default function V3Dashboard() {
           href="/v1/dashboard"
           className={styles.switchButton}
           onClick={() => localStorage.setItem('maneb_portal_version', 'v1')}
-          style={{ display: 'none' }}
         >
           Switch to V1 (Backend)
         </Link>

@@ -44,7 +44,6 @@ export function useMetricsStream(url: string) {
     let es: EventSource | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
 
     const connect = () => {
       try {
@@ -90,28 +89,20 @@ export function useMetricsStream(url: string) {
           }
         };
 
-        es.onerror = (err) => {
-          logger.error(new Error('EventSource connection error'), { url });
+        es.onerror = () => {
           setError('Failed to connect to metrics stream');
           setLoading(false);
-          
+
           if (es) {
             es.close();
             es = null;
           }
 
-          // Attempt to reconnect with exponential backoff
+          // Reconnect with exponential backoff — no hard limit, keep retrying
           reconnectAttempts++;
-          if (reconnectAttempts < maxReconnectAttempts) {
-            const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-            console.log(`[useMetricsStream] Reconnecting in ${delayMs}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
-            reconnectTimeout = setTimeout(connect, delayMs);
-          } else {
-            logger.error(
-              new Error('Max reconnection attempts reached'),
-              { url, attempts: reconnectAttempts }
-            );
-          }
+          const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+          console.log(`[useMetricsStream] Reconnecting in ${delayMs}ms (attempt ${reconnectAttempts})`);
+          reconnectTimeout = setTimeout(connect, delayMs);
         };
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -119,12 +110,10 @@ export function useMetricsStream(url: string) {
         setError('Failed to initialize metrics stream');
         setLoading(false);
 
-        // Attempt to reconnect
+        // Reconnect with exponential backoff
         reconnectAttempts++;
-        if (reconnectAttempts < maxReconnectAttempts) {
-          const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-          reconnectTimeout = setTimeout(connect, delayMs);
-        }
+        const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectTimeout = setTimeout(connect, delayMs);
       }
     };
 

@@ -24,6 +24,7 @@ const os      = require('os');
 
 const app  = express();
 const PORT = process.env.V1_PORT || 3002;
+const HOST = process.env.V1_HOST || 'localhost';
 const DB_FILE = path.join(__dirname, 'db.json');
 
 app.use(cors());
@@ -364,15 +365,16 @@ app.post('/k6/clear', (req, res) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+app.listen(PORT, HOST, () => {
   console.log(`
 ╔══════════════════════════════════════════════════╗
 ║         MANEB V1 Backend Server                  ║
 ╠══════════════════════════════════════════════════╣
+║  Host          : ${HOST}                          ║
 ║  Port          : ${PORT}                              ║
-║  Search        : POST http://localhost:${PORT}/v1/search  ║
-║  Metrics       : GET  http://localhost:${PORT}/v1/metrics ║
-║  Results (V3)  : GET  http://localhost:${PORT}/api/results║
+║  Search        : POST http://${HOST}:${PORT}/v1/search  ║
+║  Metrics       : GET  http://${HOST}:${PORT}/v1/metrics ║
+║  Results (V3)  : GET  http://${HOST}:${PORT}/api/results║
 ║  Database      : ${db.rows.length} rows loaded               ║
 ╚══════════════════════════════════════════════════╝
   `);

@@ -12,6 +12,7 @@ import {
   Legend,
   ArcElement,
   BarElement,
+  Filler,
 } from 'chart.js';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import { useMetricsStream } from '../../hooks/useMetricsStream';
@@ -27,7 +28,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  BarElement
+  BarElement,
+  Filler
 );
 
 const DEFAULT_METRICS = {
@@ -63,7 +65,7 @@ const DEFAULT_METRICS = {
 };
 
 export default function V1Dashboard() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   const metricsEndpoint = `${apiUrl}/v1/api/metrics/stream`;
 
   const { metrics: streamMetrics, history, loading, error } = useMetricsStream(
@@ -152,7 +154,10 @@ export default function V1Dashboard() {
         <Link
           href="/v3/dashboard"
           className={styles.switchButton}
-          onClick={() => localStorage.setItem('maneb_portal_version', 'v3')}
+          onClick={() => {
+            localStorage.setItem('maneb_portal_version', 'v3');
+            localStorage.setItem('maneb_active_dashboard', 'v3');
+          }}
         >
           Switch to V3 (CDN)
         </Link>
@@ -162,13 +167,13 @@ export default function V1Dashboard() {
 
       {loading && (
         <div className={styles.alert} style={{ backgroundColor: '#2196F3', color: 'white' }}>
-          Loading metrics... Please wait.
+          Connecting to VPS backend...
         </div>
       )}
 
       {error && (
-        <div className={styles.alert} style={{ backgroundColor: '#ff9800', color: 'white' }}>
-          ⚠ Failed to connect to metrics stream
+        <div className={styles.alert} style={{ backgroundColor: '#f44336', color: 'white' }}>
+          ⚠ VPS Backend Not Running — Cannot collect metrics. Start the backend server to see live data.
         </div>
       )}
 

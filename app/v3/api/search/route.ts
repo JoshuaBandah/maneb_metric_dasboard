@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const { examNumber, dob, examYear } = body;
 
     if (!examNumber || !dob) {
+      await recordToCDNServer({ success: false, fetchMs: 0, lookupMs: 0, centre: 'unknown', examYear: 'unknown' });
       return NextResponse.json(
         { error: 'Missing required fields: examNumber, dob' },
         { status: 400 }
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     const centre = extractCentreNumber(exam);
 
     if (!centre) {
+      await recordToCDNServer({ success: false, fetchMs: 0, lookupMs: 0, centre: 'invalid', examYear: year });
       return NextResponse.json(
         { error: 'Invalid exam number format. Expected: J0282/001 or M0282/0001' },
         { status: 400 }

@@ -151,7 +151,8 @@ export async function POST(request: NextRequest) {
         const { file: schoolFile, centre, errors } = generateV3SchoolFile(
           csvContent,
           schoolName,
-          examYear
+          examYear,
+          examType
         );
 
         if (schoolFile.totalStudents === 0) {
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Upload to CDN
+        // Upload school index JSON to R2
         const publicUrl = await uploadSchoolFileToR2(schoolFile, examYear, examType);
 
         // Log it

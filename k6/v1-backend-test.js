@@ -24,8 +24,8 @@ import { Trend, Counter, Rate } from 'k6/metrics';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const BASE_URL   = __ENV.BASE_URL   || 'http://localhost:3001';
-const METRIC_URL = __ENV.METRIC_URL || 'http://localhost:3002'; // V1 backend directly
+const BASE_URL   = __ENV.BASE_URL   || 'http://10.10.20.52:3000';
+const METRIC_URL = __ENV.METRIC_URL || 'http://10.10.20.52:3000'; // V1 backend directly
 
 // ─── Custom metrics ───────────────────────────────────────────────────────────
 

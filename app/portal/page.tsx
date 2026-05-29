@@ -37,24 +37,10 @@ export default function StudentPortal() {
 
   const EXAM_YEAR = process.env.NEXT_PUBLIC_EXAM_YEAR || '2024';
 
-  // Always use V3 — portal is V3 focused
+  // Always V3 — portal is V3 focused
   useEffect(() => {
-    // Force V3 in localStorage so it's always consistent
     localStorage.setItem('maneb_portal_version', 'v3');
     setVersion('v3');
-
-    // Listen for storage changes (when admin switches in another tab)
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'maneb_portal_version' && (e.newValue === 'v1' || e.newValue === 'v3')) {
-        setVersion(e.newValue as Version);
-        setState('search');
-        setResult(null);
-        setErrorMsg('');
-        setSearchMeta({});
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
